@@ -208,4 +208,4 @@ Full documentation at <https://hexdocs.pm/duffel>.
 
 ## License
 
-MIT
+BSD 2-Clause. See [LICENSE](LICENSE).

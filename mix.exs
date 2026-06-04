@@ -32,7 +32,7 @@ defmodule Duffel.MixProject do
   def package do
     [
       files: ~w(.formatter.exs lib mix.exs README.md CHANGELOG.md LICENSE),
-      licenses: ["MIT"],
+      licenses: ["BSD-2-Clause"],
       links: %{"API Docs" => "https://duffel.com/docs"}
     ]
   end
