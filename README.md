@@ -1,11 +1,11 @@
 # Duffel
 
-An Elixir library for the Duffel API.
+An Elixir client for the [Duffel API](https://duffel.com/docs/api) — search,
+book and manage flights.
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `duffel` to your list of dependencies in `mix.exs`:
+Add `duffel` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
@@ -15,7 +15,197 @@ def deps do
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/duffel>.
+## Getting started
 
+Grab an access token from the [Duffel dashboard](https://app.duffel.com/) and
+build a client:
+
+```elixir
+client = Duffel.new(access_token: "duffel_test_...")
+```
+
+Or configure it once and use `Duffel.new/0`:
+
+```elixir
+# config/runtime.exs
+config :duffel, access_token: System.fetch_env!("DUFFEL_ACCESS_TOKEN")
+
+client = Duffel.new()
+```
+
+Test mode and live mode use the same API — only the token differs. Clients
+are plain structs, so multi-tenant apps can hold one per Duffel account.
+
+Every call returns `{:ok, result}` or `{:error, %Duffel.Error{}}`.
+
+## Searching and booking flights
+
+```elixir
+# 1. Search: create an offer request
+{:ok, offer_request} =
+  Duffel.OfferRequests.create(client, %{
+    slices: [
+      %{origin: "LHR", destination: "JFK", departure_date: "2026-07-01"}
+    ],
+    passengers: [%{type: "adult"}],
+    cabin_class: "economy"
+  })
+
+# 2. Pick an offer
+{:ok, page} =
+  Duffel.Offers.list(client,
+    offer_request_id: offer_request["id"],
+    sort: "total_amount"
+  )
+
+offer = hd(page.data)
+
+# 3. Book: create an order
+{:ok, order} =
+  Duffel.Orders.create(
+    client,
+    %{
+      selected_offers: [offer["id"]],
+      passengers: [
+        %{
+          id: hd(offer["passengers"])["id"],
+          title: "ms",
+          given_name: "Amelia",
+          family_name: "Earhart",
+          born_on: "1987-07-24",
+          email: "amelia@duffel.com",
+          phone_number: "+442080160508"
+        }
+      ],
+      payments: [
+        %{
+          type: "balance",
+          currency: offer["total_currency"],
+          amount: offer["total_amount"]
+        }
+      ]
+    },
+    idempotency_key: "my-booking-reference"
+  )
+
+order["booking_reference"]
+#=> "RZPNX8"
+```
+
+Pass `:idempotency_key` when creating orders or payments to guard against
+duplicate bookings on retries.
+
+## Pagination
+
+List endpoints return one `Duffel.Page` at a time:
+
+```elixir
+{:ok, page} = Duffel.Orders.list(client, limit: 100)
+page.data          # results
+page.after_cursor  # pass as `after:` for the next page; nil on the last page
+```
+
+Or stream every result lazily — pages are fetched as needed:
+
+```elixir
+client
+|> Duffel.Orders.stream(awaiting_payment: true)
+|> Enum.take(500)
+```
+
+Streams raise `Duffel.Error` on request failure.
+
+## Error handling
+
+Errors mirror the [Duffel error schema](https://duffel.com/docs/api/overview/errors),
+with `type` as an atom for pattern matching:
+
+```elixir
+case Duffel.Orders.create(client, params) do
+  {:ok, order} ->
+    order
+
+  {:error, %Duffel.Error{type: :rate_limit_error}} ->
+    retry_later()
+
+  {:error, %Duffel.Error{type: :validation_error, source: source, message: message}} ->
+    show_field_error(source, message)
+
+  {:error, %Duffel.Error{request_id: request_id}} ->
+    # quote request_id when contacting Duffel support
+    log_and_fail(request_id)
+end
+```
+
+Rate-limited (429) and transient server errors are retried automatically
+with backoff.
+
+## Webhooks
+
+Manage subscriptions and verify incoming deliveries:
+
+```elixir
+{:ok, webhook} =
+  Duffel.Webhooks.create(client, %{
+    url: "https://example.com/webhooks/duffel",
+    events: ["order.created", "order.airline_initiated_change_detected"]
+  })
+
+# The signing secret is only returned on creation — store it.
+webhook["secret"]
+```
+
+In your endpoint, verify the `X-Duffel-Signature` header against the **raw
+request body** before parsing:
+
+```elixir
+case Duffel.Webhooks.verify_signature(signature_header, raw_body, secret) do
+  :ok -> handle_event(Jason.decode!(raw_body))
+  {:error, _reason} -> send_resp(conn, 401, "")
+end
+```
+
+Verification uses a constant-time comparison and rejects deliveries older
+than 5 minutes (configurable via `:tolerance`).
+
+## Resources
+
+| Module | Duffel resource |
+| --- | --- |
+| `Duffel.OfferRequests` | Search for flights |
+| `Duffel.Offers` | Offers returned by a search |
+| `Duffel.SeatMaps` | Seat maps for an offer |
+| `Duffel.Orders` | Bookings, services, metadata |
+| `Duffel.Payments` | Pay for hold orders |
+| `Duffel.OrderCancellations` | Two-step cancellation with refund preview |
+| `Duffel.OrderChangeRequests` | Request changes to an order |
+| `Duffel.OrderChangeOffers` | Offers for a change request |
+| `Duffel.OrderChanges` | Apply and confirm a change |
+| `Duffel.AirlineInitiatedChanges` | Handle schedule changes |
+| `Duffel.Webhooks` | Subscriptions + signature verification |
+| `Duffel.Airlines` / `Duffel.Airports` / `Duffel.Aircraft` | Reference data |
+
+## Testing your app
+
+The client accepts `req_options`, so you can stub HTTP with
+[`Req.Test`](https://hexdocs.pm/req/Req.Test.html) — no network needed:
+
+```elixir
+client =
+  Duffel.new(
+    access_token: "duffel_test_fake",
+    req_options: [plug: {Req.Test, MyApp.DuffelStub}, retry: false]
+  )
+
+Req.Test.stub(MyApp.DuffelStub, fn conn ->
+  Req.Test.json(conn, %{"data" => %{"id" => "ord_1"}})
+end)
+```
+
+## Documentation
+
+Full documentation at <https://hexdocs.pm/duffel>.
+
+## License
+
+MIT
