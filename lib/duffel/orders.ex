@@ -105,6 +105,18 @@ defmodule Duffel.Orders do
   end
 
   @doc """
+  Re-prices an unpaid (hold) order with the airline and returns the
+  updated order.
+  """
+  @spec price(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  def price(client, id) when is_binary(id) do
+    with {:ok, %{"data" => data}} <-
+           Client.post(client, "#{@path}/#{id}/actions/price", %{}) do
+      {:ok, data}
+    end
+  end
+
+  @doc """
   Lists the services (e.g. extra bags, seats) available to add to an order.
   """
   @spec available_services(Client.t(), String.t()) :: {:ok, [map()]} | {:error, term()}

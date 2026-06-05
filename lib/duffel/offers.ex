@@ -61,6 +61,17 @@ defmodule Duffel.Offers do
   end
 
   @doc """
+  Re-prices the offer with the airline and returns the updated offer.
+  """
+  @spec price(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  def price(client, id) when is_binary(id) do
+    with {:ok, %{"data" => data}} <-
+           Client.post(client, "#{@path}/#{id}/actions/price", %{}) do
+      {:ok, data}
+    end
+  end
+
+  @doc """
   Updates a passenger on an offer, e.g. to add loyalty programme accounts.
 
   ## Examples
