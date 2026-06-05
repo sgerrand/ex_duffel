@@ -1,7 +1,7 @@
 defmodule Duffel.SupportingDataTest do
   use ExUnit.Case, async: true
 
-  alias Duffel.{Aircraft, Airlines, Airports, Page}
+  alias Duffel.{Aircraft, Airlines, Airports, Cities, LoyaltyProgrammes, Page, Places}
 
   defp client do
     Duffel.new(
@@ -104,6 +104,63 @@ defmodule Duffel.SupportingDataTest do
       end)
 
       assert client() |> Aircraft.stream() |> Enum.map(& &1["id"]) == ["arc_1"]
+    end
+  end
+
+  describe "Cities" do
+    test "list/1, stream/2 and get/2" do
+      stub(fn conn ->
+        case conn.request_path do
+          "/air/cities" ->
+            Req.Test.json(conn, %{
+              "data" => [%{"id" => "cit_1", "iata_code" => "LON"}],
+              "meta" => %{"after" => nil, "limit" => 50}
+            })
+
+          "/air/cities/cit_1" ->
+            Req.Test.json(conn, %{"data" => %{"id" => "cit_1"}})
+        end
+      end)
+
+      assert {:ok, %Page{data: [%{"iata_code" => "LON"}]}} = Cities.list(client())
+      assert client() |> Cities.stream() |> Enum.map(& &1["id"]) == ["cit_1"]
+      assert {:ok, %{"id" => "cit_1"}} = Cities.get(client(), "cit_1")
+    end
+  end
+
+  describe "LoyaltyProgrammes" do
+    test "list/1, stream/2 and get/2" do
+      stub(fn conn ->
+        case conn.request_path do
+          "/air/loyalty_programmes" ->
+            Req.Test.json(conn, %{
+              "data" => [%{"id" => "loy_1", "name" => "Executive Club"}],
+              "meta" => %{"after" => nil, "limit" => 50}
+            })
+
+          "/air/loyalty_programmes/loy_1" ->
+            Req.Test.json(conn, %{"data" => %{"id" => "loy_1"}})
+        end
+      end)
+
+      assert {:ok, %Page{data: [%{"id" => "loy_1"}]}} = LoyaltyProgrammes.list(client())
+      assert client() |> LoyaltyProgrammes.stream() |> Enum.map(& &1["id"]) == ["loy_1"]
+      assert {:ok, %{"id" => "loy_1"}} = LoyaltyProgrammes.get(client(), "loy_1")
+    end
+  end
+
+  describe "Places" do
+    test "suggestions/2 searches by query" do
+      stub(fn conn ->
+        assert conn.request_path == "/places/suggestions"
+        assert conn.query_params["query"] == "lond"
+
+        Req.Test.json(conn, %{
+          "data" => [%{"id" => "cit_1", "name" => "London", "type" => "city"}]
+        })
+      end)
+
+      assert {:ok, [%{"name" => "London"}]} = Places.suggestions(client(), query: "lond")
     end
   end
 end
