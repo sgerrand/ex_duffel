@@ -69,6 +69,17 @@ defmodule Duffel.OrderChangesTest do
                OrderChangeOffers.list(client(), order_change_request_id: "ocr_1")
     end
 
+    test "stream/2 streams change offers" do
+      stub(fn conn ->
+        assert conn.query_params["order_change_request_id"] == "ocr_1"
+        Req.Test.json(conn, %{"data" => [%{"id" => "oco_1"}], "meta" => %{"after" => nil}})
+      end)
+
+      assert client()
+             |> OrderChangeOffers.stream(order_change_request_id: "ocr_1")
+             |> Enum.map(& &1["id"]) == ["oco_1"]
+    end
+
     test "get/2 fetches a change offer" do
       stub(fn conn ->
         assert conn.request_path == "/air/order_change_offers/oco_1"

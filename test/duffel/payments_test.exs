@@ -73,4 +73,16 @@ defmodule Duffel.PaymentsTest do
                Payments.list(client(), order_id: "ord_1")
     end
   end
+
+  describe "stream/2" do
+    test "streams payments for an order" do
+      stub(fn conn ->
+        assert conn.query_params["order_id"] == "ord_1"
+        Req.Test.json(conn, %{"data" => [%{"id" => "pay_1"}], "meta" => %{"after" => nil}})
+      end)
+
+      assert client() |> Payments.stream(order_id: "ord_1") |> Enum.map(& &1["id"]) ==
+               ["pay_1"]
+    end
+  end
 end

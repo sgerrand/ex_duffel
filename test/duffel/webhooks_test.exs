@@ -57,6 +57,14 @@ defmodule Duffel.WebhooksTest do
       assert {:ok, %Page{data: [%{"id" => "sev_1"}]}} = Webhooks.list(client())
     end
 
+    test "stream/2 streams webhooks" do
+      stub(fn conn ->
+        Req.Test.json(conn, %{"data" => [%{"id" => "sev_1"}], "meta" => %{"after" => nil}})
+      end)
+
+      assert client() |> Webhooks.stream() |> Enum.map(& &1["id"]) == ["sev_1"]
+    end
+
     test "update/3 patches the webhook" do
       stub(fn conn ->
         assert conn.method == "PATCH"
@@ -149,6 +157,13 @@ defmodule Duffel.WebhooksTest do
                Webhooks.verify_signature(header, @body, @secret,
                  now: 1_700_010_000,
                  tolerance: :infinity
+               )
+    end
+
+    test "rejects signatures of the wrong length" do
+      assert {:error, :invalid_signature} =
+               Webhooks.verify_signature("t=1700000000,v1=deadbeef", @body, @secret,
+                 now: 1_700_000_000
                )
     end
 

@@ -68,6 +68,15 @@ defmodule Duffel.SupportingDataTest do
 
       assert {:ok, %{"iata_code" => "LHR"}} = Airports.get(client(), "arp_1")
     end
+
+    test "list/1 defaults and stream/2" do
+      stub(fn conn ->
+        Req.Test.json(conn, %{"data" => [%{"id" => "arp_1"}], "meta" => %{"after" => nil}})
+      end)
+
+      assert {:ok, %Page{data: [%{"id" => "arp_1"}]}} = Airports.list(client())
+      assert client() |> Airports.stream() |> Enum.map(& &1["id"]) == ["arp_1"]
+    end
   end
 
   describe "Aircraft" do
@@ -87,6 +96,14 @@ defmodule Duffel.SupportingDataTest do
 
       assert {:ok, %Page{data: [%{"id" => "arc_1"}]}} = Aircraft.list(client())
       assert {:ok, %{"id" => "arc_1"}} = Aircraft.get(client(), "arc_1")
+    end
+
+    test "stream/2 follows cursors" do
+      stub(fn conn ->
+        Req.Test.json(conn, %{"data" => [%{"id" => "arc_1"}], "meta" => %{"after" => nil}})
+      end)
+
+      assert client() |> Aircraft.stream() |> Enum.map(& &1["id"]) == ["arc_1"]
     end
   end
 end

@@ -82,6 +82,14 @@ defmodule Duffel.OrdersTest do
                Orders.list(client(), awaiting_payment: true, sort: "-created_at")
     end
 
+    test "list/1 defaults to no params" do
+      stub(fn conn ->
+        Req.Test.json(conn, %{"data" => [], "meta" => %{"after" => nil}})
+      end)
+
+      assert {:ok, %Page{data: []}} = Orders.list(client())
+    end
+
     test "streams orders across pages" do
       stub(fn conn ->
         case conn.query_params["after"] do

@@ -72,5 +72,15 @@ defmodule Duffel.OrderCancellationsTest do
       assert {:ok, %Page{data: [%{"id" => "ore_1"}]}} =
                OrderCancellations.list(client(), order_id: "ord_1")
     end
+
+    test "list/1 defaults and stream/2" do
+      stub(fn conn ->
+        Req.Test.json(conn, %{"data" => [%{"id" => "ore_1"}], "meta" => %{"after" => nil}})
+      end)
+
+      assert {:ok, %Page{data: [%{"id" => "ore_1"}]}} = OrderCancellations.list(client())
+
+      assert client() |> OrderCancellations.stream() |> Enum.map(& &1["id"]) == ["ore_1"]
+    end
   end
 end

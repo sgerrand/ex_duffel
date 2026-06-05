@@ -75,6 +75,14 @@ defmodule Duffel.OfferRequestsTest do
       assert {:ok, %Page{data: [%{"id" => "orq_1"}], after_cursor: nil}} =
                OfferRequests.list(client(), limit: 10)
     end
+
+    test "defaults to no params" do
+      stub(fn conn ->
+        Req.Test.json(conn, %{"data" => [], "meta" => %{"after" => nil}})
+      end)
+
+      assert {:ok, %Page{data: []}} = OfferRequests.list(client())
+    end
   end
 
   describe "stream/2" do

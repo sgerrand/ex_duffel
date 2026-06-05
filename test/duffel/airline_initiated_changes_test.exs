@@ -27,6 +27,16 @@ defmodule Duffel.AirlineInitiatedChangesTest do
              AirlineInitiatedChanges.list(client(), order_id: "ord_1")
   end
 
+  test "list/1 defaults and stream/2" do
+    stub(fn conn ->
+      Req.Test.json(conn, %{"data" => [%{"id" => "aic_1"}], "meta" => %{"after" => nil}})
+    end)
+
+    assert {:ok, %Page{data: [%{"id" => "aic_1"}]}} = AirlineInitiatedChanges.list(client())
+
+    assert client() |> AirlineInitiatedChanges.stream() |> Enum.map(& &1["id"]) == ["aic_1"]
+  end
+
   test "accept/2 posts to the accept action" do
     stub(fn conn ->
       assert conn.method == "POST"
