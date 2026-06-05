@@ -173,17 +173,23 @@ than 5 minutes (configurable via `:tolerance`).
 | Module | Duffel resource |
 | --- | --- |
 | `Duffel.OfferRequests` | Search for flights |
-| `Duffel.Offers` | Offers returned by a search |
+| `Duffel.PartialOfferRequests` | Multi-step (per-slice) search |
+| `Duffel.BatchOfferRequests` | Batched search with polling |
+| `Duffel.Offers` | Offers returned by a search, re-pricing |
 | `Duffel.SeatMaps` | Seat maps for an offer |
-| `Duffel.Orders` | Bookings, services, metadata |
+| `Duffel.Orders` | Bookings, services, metadata, re-pricing |
 | `Duffel.Payments` | Pay for hold orders |
 | `Duffel.OrderCancellations` | Two-step cancellation with refund preview |
 | `Duffel.OrderChangeRequests` | Request changes to an order |
 | `Duffel.OrderChangeOffers` | Offers for a change request |
 | `Duffel.OrderChanges` | Apply and confirm a change |
 | `Duffel.AirlineInitiatedChanges` | Handle schedule changes |
+| `Duffel.AirlineCredits` | Credits issued to customer users |
 | `Duffel.Webhooks` | Subscriptions + signature verification |
-| `Duffel.Airlines` / `Duffel.Airports` / `Duffel.Aircraft` | Reference data |
+| `Duffel.WebhookEvents` / `Duffel.WebhookDeliveries` | Event inspection, redelivery |
+| `Duffel.Airlines` / `Duffel.Airports` / `Duffel.Aircraft` / `Duffel.Cities` | Reference data |
+| `Duffel.LoyaltyProgrammes` | Loyalty programme reference data |
+| `Duffel.Places` | Airport/city autocomplete |
 
 ## Testing your app
 
