@@ -1,0 +1,5383 @@
+openapi: 3.1.0
+info:
+  title: Duffel API
+  version: "2"
+  description: |
+    OpenAPI specification for the Duffel API (version v2), generated from the
+    public documentation at https://duffel.com/docs/api.
+
+    Covers Flights, Stays, Cars, Payments, Identity, Notifications (webhooks)
+    and supporting resources.
+
+    All requests must include the `Duffel-Version: v2` header and a Bearer
+    access token. Request and response bodies are wrapped in a `data` envelope.
+    List endpoints are cursor-paginated via `limit`, `before` and `after`.
+  contact:
+    name: Duffel
+    url: https://duffel.com/docs
+  termsOfService: https://duffel.com/legal/terms-and-conditions
+servers:
+  - url: https://api.duffel.com
+    description: Production and test mode (mode determined by access token)
+security:
+  - bearerAuth: []
+tags:
+  - name: Offer Requests
+    description: Search for flights by describing slices and passengers
+  - name: Partial Offer Requests
+    description: Multi-step search returning fares per slice
+  - name: Batch Offer Requests
+    description: Search returning offers in batches as airlines respond
+  - name: Offers
+    description: Flight offers returned for an offer request
+  - name: Orders
+    description: Booked flight orders
+  - name: Payments
+    description: Payments against held orders
+  - name: Seat Maps
+    description: Seat maps and seat services for an offer
+  - name: Order Cancellations
+    description: Quote and confirm order cancellations
+  - name: Order Change Requests
+    description: Request changes to an order
+  - name: Order Change Offers
+    description: Offers satisfying an order change request
+  - name: Order Changes
+    description: Confirmable order changes
+  - name: Airline-Initiated Changes
+    description: Schedule changes initiated by the airline
+  - name: Airline Credits
+    description: Airline credits usable against new offers
+  - name: Airlines
+  - name: Aircraft
+  - name: Airports
+  - name: Cities
+  - name: Places
+    description: Place autocomplete suggestions
+  - name: Loyalty Programmes
+    description: Airline loyalty programmes
+  - name: Stays - Search
+  - name: Stays - Accommodation
+  - name: Stays - Quotes
+  - name: Stays - Bookings
+  - name: Stays - Brands
+  - name: Stays - Chains
+  - name: Stays - Negotiated Rates
+  - name: Stays - Loyalty Programmes
+  - name: Cars - Search
+  - name: Cars - Quotes
+  - name: Cars - Bookings
+  - name: Cards
+    description: Tokenise customer cards (separate PCI-scoped host api.duffel.cards)
+  - name: 3DS Sessions
+    description: Three-D Secure sessions for card payments
+  - name: Customer Users
+  - name: Customer User Groups
+  - name: Component Client Keys
+  - name: Webhooks
+  - name: Webhook Events
+  - name: Webhook Deliveries
+paths:
+  # ---------------------------------------------------------------------------
+  # Flights: Offer Requests
+  # ---------------------------------------------------------------------------
+  /air/offer_requests:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Offer Requests]
+      operationId: listOfferRequests
+      summary: List offer requests
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: Paginated list of offer requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/OfferRequest"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Offer Requests]
+      operationId: createOfferRequest
+      summary: Create an offer request
+      description: >
+        Describe the slices and passengers you want to search for. Offers are
+        returned inline when `return_offers` is true (default), otherwise
+        retrieve them via the Offers endpoints.
+      parameters:
+        - name: return_offers
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Whether to include offers in the response
+        - name: supplier_timeout
+          in: query
+          schema:
+            type: integer
+            minimum: 2000
+            maximum: 60000
+            default: 20000
+          description: Milliseconds to wait for each airline to respond
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  $ref: "#/components/schemas/CreateOfferRequest"
+      responses:
+        "201":
+          description: The created offer request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OfferRequest"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/offer_requests/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Duffel's unique identifier for the offer request
+    get:
+      tags: [Offer Requests]
+      operationId: getOfferRequest
+      summary: Get a single offer request
+      responses:
+        "200":
+          description: The offer request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OfferRequest"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ---------------------------------------------------------------------------
+  # Flights: Partial Offer Requests
+  # ---------------------------------------------------------------------------
+  /air/partial_offer_requests:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    post:
+      tags: [Partial Offer Requests]
+      operationId: createPartialOfferRequest
+      summary: Create a partial offer request
+      description: >
+        Multi-step search. Returns offers for each slice independently; select
+        one partial offer per slice and fetch full fares with the fares
+        endpoint.
+      parameters:
+        - name: supplier_timeout
+          in: query
+          schema:
+            type: integer
+            minimum: 2000
+            maximum: 60000
+            default: 20000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  $ref: "#/components/schemas/CreateOfferRequest"
+      responses:
+        "201":
+          description: The created partial offer request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OfferRequest"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/partial_offer_requests/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Partial Offer Requests]
+      operationId: getPartialOfferRequest
+      summary: Get a partial offer request
+      parameters:
+        - name: selected_partial_offer[]
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          description: Partial offer IDs already selected for previous slices
+      responses:
+        "200":
+          description: The partial offer request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OfferRequest"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/partial_offer_requests/{id}/fares:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Partial Offer Requests]
+      operationId: getPartialOfferRequestFares
+      summary: Get full fares for selected partial offers
+      parameters:
+        - name: selected_partial_offer[]
+          in: query
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          description: One selected partial offer ID per slice
+      responses:
+        "200":
+          description: Offer request containing full offers for the selection
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OfferRequest"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ---------------------------------------------------------------------------
+  # Flights: Batch Offer Requests
+  # ---------------------------------------------------------------------------
+  /air/batch_offer_requests:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    post:
+      tags: [Batch Offer Requests]
+      operationId: createBatchOfferRequest
+      summary: Create a batch offer request
+      description: >
+        Returns immediately with `total_batches`; poll the GET endpoint to
+        receive offers batch by batch as airlines respond.
+      parameters:
+        - name: supplier_timeout
+          in: query
+          schema:
+            type: integer
+            minimum: 2000
+            maximum: 60000
+            default: 20000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  $ref: "#/components/schemas/CreateOfferRequest"
+      responses:
+        "201":
+          description: The created batch offer request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/BatchOfferRequest"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/batch_offer_requests/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Batch Offer Requests]
+      operationId: getBatchOfferRequest
+      summary: Get a batch of offers
+      description: >
+        Long-polls until the next batch of offers is available or all batches
+        are returned.
+      responses:
+        "200":
+          description: The next batch of offers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/BatchOfferRequest"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ---------------------------------------------------------------------------
+  # Flights: Offers
+  # ---------------------------------------------------------------------------
+  /air/offers:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Offers]
+      operationId: listOffers
+      summary: List offers for an offer request
+      parameters:
+        - name: offer_request_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [total_amount, total_duration, "-total_amount", "-total_duration"]
+          description: Sort order; prefix with `-` for descending
+        - name: max_connections
+          in: query
+          schema:
+            type: integer
+          description: Only return offers with at most this many connections per slice
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: Paginated list of offers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Offer"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/offers/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Offers]
+      operationId: getOffer
+      summary: Get a single offer
+      parameters:
+        - name: return_available_services
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include available services (bags, seats) in the offer
+      responses:
+        "200":
+          description: The offer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Offer"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/offers/{id}/actions/price:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [Offers]
+      operationId: priceOffer
+      summary: Get the latest price for an offer
+      description: Re-prices the offer with the airline and returns the updated offer.
+      responses:
+        "200":
+          description: The re-priced offer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Offer"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/offers/{offer_id}/passengers/{offer_passenger_id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: offer_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: offer_passenger_id
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      tags: [Offers]
+      operationId: updateOfferPassenger
+      summary: Update a passenger on an offer
+      description: >
+        Add loyalty programme accounts or names to an offer passenger before
+        booking, so loyalty fares can be applied.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  properties:
+                    given_name:
+                      type: string
+                    family_name:
+                      type: string
+                    loyalty_programme_accounts:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/LoyaltyProgrammeAccount"
+      responses:
+        "200":
+          description: The updated offer passenger
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OfferRequestPassenger"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ---------------------------------------------------------------------------
+  # Flights: Orders
+  # ---------------------------------------------------------------------------
+  /air/orders:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Orders]
+      operationId: listOrders
+      summary: List orders
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+        - name: booking_reference
+          in: query
+          schema:
+            type: string
+          description: Filter by airline booking reference (PNR)
+        - name: awaiting_payment
+          in: query
+          schema:
+            type: boolean
+          description: Filter hold orders awaiting payment
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [payment_required_by, "-payment_required_by", created_at, "-created_at", next_departure, "-next_departure"]
+        - name: passenger_name[]
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          description: Filter by passenger name
+        - name: requires_action
+          in: query
+          schema:
+            type: boolean
+          description: Filter orders with pending airline-initiated changes or schedule changes
+      responses:
+        "200":
+          description: Paginated list of orders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Order"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Orders]
+      operationId: createOrder
+      summary: Create an order
+      description: >
+        Book one selected offer. `type: instant` requires payment inline;
+        `type: hold` creates an unpaid order to be paid later via Payments.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  $ref: "#/components/schemas/CreateOrder"
+      responses:
+        "201":
+          description: The created order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Order"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/orders/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Orders]
+      operationId: getOrder
+      summary: Get a single order
+      responses:
+        "200":
+          description: The order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Order"
+        default:
+          $ref: "#/components/responses/Error"
+    patch:
+      tags: [Orders]
+      operationId: updateOrder
+      summary: Update an order's metadata
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  properties:
+                    metadata:
+                      $ref: "#/components/schemas/Metadata"
+      responses:
+        "200":
+          description: The updated order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Order"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/orders/{id}/actions/price:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [Orders]
+      operationId: priceOrder
+      summary: Get the latest price for a hold order
+      description: Re-prices an unpaid (hold) order with the airline.
+      responses:
+        "200":
+          description: The re-priced order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Order"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/orders/{id}/available_services:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Orders]
+      operationId: getOrderAvailableServices
+      summary: List services available to add to an order
+      responses:
+        "200":
+          description: Available services (bags, seats, etc.)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AvailableService"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/orders/{id}/services:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [Orders]
+      operationId: createOrderServices
+      summary: Add services to an existing order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  required: [add_services, payment]
+                  properties:
+                    add_services:
+                      type: array
+                      items:
+                        type: object
+                        required: [id, quantity]
+                        properties:
+                          id:
+                            type: string
+                            description: Available service ID
+                          quantity:
+                            type: integer
+                    payment:
+                      $ref: "#/components/schemas/CreatePayment"
+      responses:
+        "200":
+          description: The updated order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Order"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ---------------------------------------------------------------------------
+  # Flights: Payments
+  # ---------------------------------------------------------------------------
+  /air/payments:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Payments]
+      operationId: listPayments
+      summary: List payments
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+        - name: order_id
+          in: query
+          schema:
+            type: string
+          description: Filter payments by order
+      responses:
+        "200":
+          description: Paginated list of payments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Payment"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Payments]
+      operationId: createPayment
+      summary: Pay for a hold order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  required: [order_id, payment]
+                  properties:
+                    order_id:
+                      type: string
+                    payment:
+                      $ref: "#/components/schemas/CreatePayment"
+      responses:
+        "201":
+          description: The created payment
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Payment"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/payments/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Payments]
+      operationId: getPayment
+      summary: Get a single payment
+      responses:
+        "200":
+          description: The payment
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Payment"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ---------------------------------------------------------------------------
+  # Flights: Seat Maps
+  # ---------------------------------------------------------------------------
+  /air/seat_maps:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Seat Maps]
+      operationId: getSeatMaps
+      summary: Get seat maps for an offer
+      parameters:
+        - name: offer_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: One seat map per segment
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SeatMap"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ---------------------------------------------------------------------------
+  # Flights: Order Cancellations
+  # ---------------------------------------------------------------------------
+  /air/order_cancellations:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Order Cancellations]
+      operationId: listOrderCancellations
+      summary: List order cancellations
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+        - name: order_id
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paginated list of order cancellations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/OrderCancellation"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Order Cancellations]
+      operationId: createOrderCancellation
+      summary: Create a pending order cancellation (quote)
+      description: >
+        Returns the refund amount the airline will pay. Nothing is cancelled
+        until confirmed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  required: [order_id]
+                  properties:
+                    order_id:
+                      type: string
+      responses:
+        "201":
+          description: The pending order cancellation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OrderCancellation"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/order_cancellations/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Order Cancellations]
+      operationId: getOrderCancellation
+      summary: Get a single order cancellation
+      responses:
+        "200":
+          description: The order cancellation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OrderCancellation"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/order_cancellations/{id}/actions/confirm:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [Order Cancellations]
+      operationId: confirmOrderCancellation
+      summary: Confirm an order cancellation
+      description: Irreversibly cancels the order and triggers the refund.
+      responses:
+        "200":
+          description: The confirmed order cancellation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OrderCancellation"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ---------------------------------------------------------------------------
+  # Flights: Order Change Requests / Offers / Changes
+  # ---------------------------------------------------------------------------
+  /air/order_change_requests:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    post:
+      tags: [Order Change Requests]
+      operationId: createOrderChangeRequest
+      summary: Create an order change request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  required: [order_id]
+                  properties:
+                    order_id:
+                      type: string
+                    slices:
+                      type: object
+                      properties:
+                        remove:
+                          type: array
+                          items:
+                            type: object
+                            required: [slice_id]
+                            properties:
+                              slice_id:
+                                type: string
+                        add:
+                          type: array
+                          items:
+                            type: object
+                            required: [origin, destination, departure_date, cabin_class]
+                            properties:
+                              origin:
+                                type: string
+                              destination:
+                                type: string
+                              departure_date:
+                                type: string
+                                format: date
+                              cabin_class:
+                                $ref: "#/components/schemas/CabinClass"
+                    private_fares:
+                      $ref: "#/components/schemas/PrivateFares"
+      responses:
+        "201":
+          description: The created order change request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OrderChangeRequest"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/order_change_requests/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Order Change Requests]
+      operationId: getOrderChangeRequest
+      summary: Get an order change request
+      responses:
+        "200":
+          description: The order change request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OrderChangeRequest"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/order_change_offers:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Order Change Offers]
+      operationId: listOrderChangeOffers
+      summary: List order change offers
+      parameters:
+        - name: order_change_request_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [change_total_amount, "-change_total_amount", total_duration, "-total_duration"]
+        - name: max_connections
+          in: query
+          schema:
+            type: integer
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: Paginated list of order change offers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/OrderChangeOffer"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/order_change_offers/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Order Change Offers]
+      operationId: getOrderChangeOffer
+      summary: Get an order change offer
+      responses:
+        "200":
+          description: The order change offer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OrderChangeOffer"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/order_changes:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    post:
+      tags: [Order Changes]
+      operationId: createOrderChange
+      summary: Create an order change from a selected change offer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  required: [selected_order_change_offer]
+                  properties:
+                    selected_order_change_offer:
+                      type: string
+                      description: The order change offer ID to apply
+      responses:
+        "201":
+          description: The created (pending) order change
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OrderChange"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/order_changes/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Order Changes]
+      operationId: getOrderChange
+      summary: Get an order change
+      responses:
+        "200":
+          description: The order change
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OrderChange"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/order_changes/{id}/actions/confirm:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [Order Changes]
+      operationId: confirmOrderChange
+      summary: Confirm an order change
+      description: Irreversibly applies the change to the order, taking payment if due.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    payment:
+                      $ref: "#/components/schemas/CreatePayment"
+      responses:
+        "200":
+          description: The confirmed order change
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OrderChange"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ---------------------------------------------------------------------------
+  # Flights: Airline-Initiated Changes
+  # ---------------------------------------------------------------------------
+  /air/airline_initiated_changes:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Airline-Initiated Changes]
+      operationId: listAirlineInitiatedChanges
+      summary: List airline-initiated changes
+      parameters:
+        - name: order_id
+          in: query
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: Paginated list of airline-initiated changes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AirlineInitiatedChange"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/airline_initiated_changes/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      tags: [Airline-Initiated Changes]
+      operationId: updateAirlineInitiatedChange
+      summary: Record the action taken for an airline-initiated change
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  required: [action_taken]
+                  properties:
+                    action_taken:
+                      type: string
+                      enum: [accepted, cancelled, changed]
+      responses:
+        "200":
+          description: The updated airline-initiated change
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AirlineInitiatedChange"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/airline_initiated_changes/{id}/actions/accept:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [Airline-Initiated Changes]
+      operationId: acceptAirlineInitiatedChange
+      summary: Accept an airline-initiated change
+      responses:
+        "200":
+          description: The accepted airline-initiated change
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AirlineInitiatedChange"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ---------------------------------------------------------------------------
+  # Flights: Airline Credits
+  # ---------------------------------------------------------------------------
+  /air/airline_credits:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Airline Credits]
+      operationId: listAirlineCredits
+      summary: List airline credits
+      parameters:
+        - name: user_id
+          in: query
+          schema:
+            type: string
+          description: Filter by customer user ID
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: Paginated list of airline credits
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AirlineCredit"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Airline Credits]
+      operationId: createAirlineCredit
+      summary: Create an airline credit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  $ref: "#/components/schemas/CreateAirlineCredit"
+      responses:
+        "201":
+          description: The created airline credit
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AirlineCredit"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/airline_credits/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Airline Credits]
+      operationId: getAirlineCredit
+      summary: Get an airline credit
+      responses:
+        "200":
+          description: The airline credit
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AirlineCredit"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ---------------------------------------------------------------------------
+  # Supporting resources
+  # ---------------------------------------------------------------------------
+  /air/airlines:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Airlines]
+      operationId: listAirlines
+      summary: List airlines
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: Paginated list of airlines
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Airline"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/airlines/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Airlines]
+      operationId: getAirline
+      summary: Get an airline
+      responses:
+        "200":
+          description: The airline
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Airline"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/aircraft:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Aircraft]
+      operationId: listAircraft
+      summary: List aircraft
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: Paginated list of aircraft
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Aircraft"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/aircraft/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Aircraft]
+      operationId: getAircraft
+      summary: Get an aircraft
+      responses:
+        "200":
+          description: The aircraft
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Aircraft"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/airports:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Airports]
+      operationId: listAirports
+      summary: List airports
+      parameters:
+        - name: iata_country_code
+          in: query
+          schema:
+            type: string
+          description: Filter by ISO 3166-1 alpha-2 country code
+        - name: iata_code
+          in: query
+          schema:
+            type: string
+          description: Filter by IATA airport code
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: Paginated list of airports
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Airport"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/airports/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Airports]
+      operationId: getAirport
+      summary: Get an airport
+      responses:
+        "200":
+          description: The airport
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Airport"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/cities:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Cities]
+      operationId: listCities
+      summary: List cities
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: Paginated list of cities
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/City"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/cities/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Cities]
+      operationId: getCity
+      summary: Get a city
+      responses:
+        "200":
+          description: The city
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/City"
+        default:
+          $ref: "#/components/responses/Error"
+  /places/suggestions:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Places]
+      operationId: getPlaceSuggestions
+      summary: Get place suggestions
+      description: Autocomplete airports and cities by name or location.
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+          description: Search string, e.g. a partial city or airport name
+        - name: rad
+          in: query
+          schema:
+            type: string
+          description: Search radius in metres (used with lat/lng)
+        - name: lat
+          in: query
+          schema:
+            type: string
+          description: Latitude to search around
+        - name: lng
+          in: query
+          schema:
+            type: string
+          description: Longitude to search around
+      responses:
+        "200":
+          description: Matching places
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Place"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/loyalty_programmes:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Loyalty Programmes]
+      operationId: listLoyaltyProgrammes
+      summary: List airline loyalty programmes
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: Paginated list of loyalty programmes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LoyaltyProgramme"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/loyalty_programmes/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Loyalty Programmes]
+      operationId: getLoyaltyProgramme
+      summary: Get an airline loyalty programme
+      responses:
+        "200":
+          description: The loyalty programme
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/LoyaltyProgramme"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ---------------------------------------------------------------------------
+  # Notifications: Webhooks
+  # ---------------------------------------------------------------------------
+  /air/webhooks:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Webhooks]
+      operationId: listWebhooks
+      summary: List webhooks
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: Paginated list of webhooks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Webhook"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Webhooks]
+      operationId: createWebhook
+      summary: Create a webhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  required: [url, events]
+                  properties:
+                    url:
+                      type: string
+                      format: uri
+                      description: HTTPS endpoint to deliver events to
+                    events:
+                      type: array
+                      items:
+                        type: string
+                      description: Event types to subscribe to, e.g. `order.created`
+      responses:
+        "201":
+          description: The created webhook (includes signing secret, shown once)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Webhook"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/webhooks/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      tags: [Webhooks]
+      operationId: updateWebhook
+      summary: Update a webhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  properties:
+                    url:
+                      type: string
+                      format: uri
+                    events:
+                      type: array
+                      items:
+                        type: string
+                    active:
+                      type: boolean
+      responses:
+        "200":
+          description: The updated webhook
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Webhook"
+        default:
+          $ref: "#/components/responses/Error"
+    delete:
+      tags: [Webhooks]
+      operationId: deleteWebhook
+      summary: Delete a webhook
+      responses:
+        "204":
+          description: Webhook deleted
+        default:
+          $ref: "#/components/responses/Error"
+  /air/webhooks/{id}/actions/ping:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [Webhooks]
+      operationId: pingWebhook
+      summary: Send a ping event to a webhook
+      responses:
+        "200":
+          description: Ping delivered
+        default:
+          $ref: "#/components/responses/Error"
+  /air/webhooks/events:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Webhook Events]
+      operationId: listWebhookEvents
+      summary: List webhook events
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: Paginated list of webhook events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/WebhookEvent"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/webhooks/events/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Webhook Events]
+      operationId: getWebhookEvent
+      summary: Get a webhook event
+      responses:
+        "200":
+          description: The webhook event
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/WebhookEvent"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/webhooks/events/{id}/actions/redeliver:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [Webhook Events]
+      operationId: redeliverWebhookEvent
+      summary: Redeliver a webhook event
+      responses:
+        "200":
+          description: Event queued for redelivery
+        default:
+          $ref: "#/components/responses/Error"
+  /air/webhooks/deliveries:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Webhook Deliveries]
+      operationId: listWebhookDeliveries
+      summary: List webhook deliveries
+      parameters:
+        - name: webhook_id
+          in: query
+          schema:
+            type: string
+        - name: delivery_success
+          in: query
+          schema:
+            type: boolean
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: Paginated list of webhook deliveries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/WebhookDelivery"
+        default:
+          $ref: "#/components/responses/Error"
+  /air/webhooks/deliveries/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Webhook Deliveries]
+      operationId: getWebhookDelivery
+      summary: Get a webhook delivery
+      responses:
+        "200":
+          description: The webhook delivery
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/WebhookDelivery"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ---------------------------------------------------------------------------
+  # Stays
+  # ---------------------------------------------------------------------------
+  /stays/search:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    post:
+      tags: [Stays - Search]
+      operationId: staysSearch
+      summary: Search for accommodation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  $ref: "#/components/schemas/StaysSearchParams"
+      responses:
+        "201":
+          description: Search results with the cheapest rate per accommodation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/StaysSearchResult"
+                      created_at:
+                        type: string
+                        format: date-time
+        default:
+          $ref: "#/components/responses/Error"
+  /stays/search_results/{search_result_id}/actions/fetch_all_rates:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: search_result_id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [Stays - Search]
+      operationId: staysFetchAllRates
+      summary: Fetch all rates for a search result
+      responses:
+        "200":
+          description: The search result with all rooms and rates populated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/StaysSearchResult"
+        default:
+          $ref: "#/components/responses/Error"
+  /stays/accommodation:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Stays - Accommodation]
+      operationId: listAccommodation
+      summary: List accommodation
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: Paginated list of accommodation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaysAccommodation"
+        default:
+          $ref: "#/components/responses/Error"
+  /stays/accommodation/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Stays - Accommodation]
+      operationId: getAccommodation
+      summary: Get accommodation
+      responses:
+        "200":
+          description: The accommodation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/StaysAccommodation"
+        default:
+          $ref: "#/components/responses/Error"
+  /stays/accommodation/suggestions:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    post:
+      tags: [Stays - Accommodation]
+      operationId: getAccommodationSuggestions
+      summary: Get accommodation suggestions
+      description: Autocomplete accommodation by name or location.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  required: [query]
+                  properties:
+                    query:
+                      type: string
+                      description: Search string, e.g. a partial hotel name
+                    location:
+                      type: object
+                      properties:
+                        geographic_coordinates:
+                          $ref: "#/components/schemas/GeographicCoordinates"
+                        radius:
+                          type: integer
+                          description: Radius in kilometres
+      responses:
+        "200":
+          description: Matching accommodation suggestions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaysAccommodationSuggestion"
+        default:
+          $ref: "#/components/responses/Error"
+  /stays/accommodation/{id}/reviews:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Stays - Accommodation]
+      operationId: getAccommodationReviews
+      summary: Get reviews for accommodation
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: Paginated accommodation reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: object
+                    properties:
+                      reviews:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/StaysReview"
+        default:
+          $ref: "#/components/responses/Error"
+  /stays/loyalty_programmes:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Stays - Loyalty Programmes]
+      operationId: listStaysLoyaltyProgrammes
+      summary: List accommodation loyalty programmes
+      responses:
+        "200":
+          description: Accommodation loyalty programmes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaysLoyaltyProgramme"
+        default:
+          $ref: "#/components/responses/Error"
+  /stays/quotes:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    post:
+      tags: [Stays - Quotes]
+      operationId: createStaysQuote
+      summary: Create a quote for a rate
+      description: >
+        Confirms availability and final price for a selected rate. Required
+        before booking.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  required: [rate_id]
+                  properties:
+                    rate_id:
+                      type: string
+      responses:
+        "201":
+          description: The created quote
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/StaysQuote"
+        default:
+          $ref: "#/components/responses/Error"
+  /stays/quotes/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Stays - Quotes]
+      operationId: getStaysQuote
+      summary: Get a quote
+      responses:
+        "200":
+          description: The quote
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/StaysQuote"
+        default:
+          $ref: "#/components/responses/Error"
+  /stays/bookings:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Stays - Bookings]
+      operationId: listStaysBookings
+      summary: List bookings
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: Paginated list of bookings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaysBooking"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Stays - Bookings]
+      operationId: createStaysBooking
+      summary: Create a booking from a quote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  $ref: "#/components/schemas/CreateStaysBooking"
+      responses:
+        "201":
+          description: The created booking
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/StaysBooking"
+        default:
+          $ref: "#/components/responses/Error"
+  /stays/bookings/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Stays - Bookings]
+      operationId: getStaysBooking
+      summary: Get a booking
+      responses:
+        "200":
+          description: The booking
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/StaysBooking"
+        default:
+          $ref: "#/components/responses/Error"
+    patch:
+      tags: [Stays - Bookings]
+      operationId: updateStaysBooking
+      summary: Update a booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  properties:
+                    metadata:
+                      $ref: "#/components/schemas/Metadata"
+                    users:
+                      type: array
+                      items:
+                        type: string
+                      description: Customer user IDs allowed to manage this booking
+      responses:
+        "200":
+          description: The updated booking
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/StaysBooking"
+        default:
+          $ref: "#/components/responses/Error"
+  /stays/bookings/{booking_id}/actions/cancel:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: booking_id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [Stays - Bookings]
+      operationId: cancelStaysBooking
+      summary: Cancel a booking
+      responses:
+        "200":
+          description: The cancelled booking
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/StaysBooking"
+        default:
+          $ref: "#/components/responses/Error"
+  /stays/bookings/{booking_id}/payment_instructions:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: booking_id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [Stays - Bookings]
+      operationId: createBookingPaymentInstruction
+      summary: Create payment instructions for a postpaid booking
+      description: >
+        Provides card details the accommodation will charge for a booking with
+        deferred payment.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  required: [card_id]
+                  properties:
+                    card_id:
+                      type: string
+                      description: ID of a card created via the Cards API
+      responses:
+        "201":
+          description: The created payment instruction
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      booking_id:
+                        type: string
+                      card_id:
+                        type: string
+                      created_at:
+                        type: string
+                        format: date-time
+        default:
+          $ref: "#/components/responses/Error"
+  /stays/brands:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Stays - Brands]
+      operationId: listStaysBrands
+      summary: List accommodation brands
+      responses:
+        "200":
+          description: Accommodation brands
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaysBrand"
+        default:
+          $ref: "#/components/responses/Error"
+  /stays/brands/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Stays - Brands]
+      operationId: getStaysBrand
+      summary: Get an accommodation brand
+      responses:
+        "200":
+          description: The brand
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/StaysBrand"
+        default:
+          $ref: "#/components/responses/Error"
+  /stays/chains:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Stays - Chains]
+      operationId: listStaysChains
+      summary: List accommodation chains
+      responses:
+        "200":
+          description: Accommodation chains
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaysChain"
+        default:
+          $ref: "#/components/responses/Error"
+  /stays/chains/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Stays - Chains]
+      operationId: getStaysChain
+      summary: Get an accommodation chain
+      responses:
+        "200":
+          description: The chain
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/StaysChain"
+        default:
+          $ref: "#/components/responses/Error"
+  /stays/negotiated_rates:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Stays - Negotiated Rates]
+      operationId: listNegotiatedRates
+      summary: List negotiated rates
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: Paginated list of negotiated rates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaysNegotiatedRate"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Stays - Negotiated Rates]
+      operationId: createNegotiatedRate
+      summary: Create a negotiated rate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  $ref: "#/components/schemas/CreateStaysNegotiatedRate"
+      responses:
+        "201":
+          description: The created negotiated rate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/StaysNegotiatedRate"
+        default:
+          $ref: "#/components/responses/Error"
+  /stays/negotiated_rates/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Stays - Negotiated Rates]
+      operationId: getNegotiatedRate
+      summary: Get a negotiated rate
+      responses:
+        "200":
+          description: The negotiated rate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/StaysNegotiatedRate"
+        default:
+          $ref: "#/components/responses/Error"
+    patch:
+      tags: [Stays - Negotiated Rates]
+      operationId: updateNegotiatedRate
+      summary: Update a negotiated rate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  $ref: "#/components/schemas/CreateStaysNegotiatedRate"
+      responses:
+        "200":
+          description: The updated negotiated rate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/StaysNegotiatedRate"
+        default:
+          $ref: "#/components/responses/Error"
+    delete:
+      tags: [Stays - Negotiated Rates]
+      operationId: deleteNegotiatedRate
+      summary: Delete a negotiated rate
+      responses:
+        "204":
+          description: Negotiated rate deleted
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ---------------------------------------------------------------------------
+  # Cars
+  # ---------------------------------------------------------------------------
+  /cars/search:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    post:
+      tags: [Cars - Search]
+      operationId: carsSearch
+      summary: Search for rental cars
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  $ref: "#/components/schemas/CarsSearchParams"
+      responses:
+        "201":
+          description: The search with available rates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CarsSearch"
+        default:
+          $ref: "#/components/responses/Error"
+  /cars/quotes:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    post:
+      tags: [Cars - Quotes]
+      operationId: createCarsQuote
+      summary: Create a quote for a rate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  required: [rate_id]
+                  properties:
+                    rate_id:
+                      type: string
+      responses:
+        "201":
+          description: The created quote
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CarsQuote"
+        default:
+          $ref: "#/components/responses/Error"
+  /cars/bookings:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    post:
+      tags: [Cars - Bookings]
+      operationId: createCarsBooking
+      summary: Create a booking from a quote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  $ref: "#/components/schemas/CreateCarsBooking"
+      responses:
+        "201":
+          description: The created booking
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CarsBooking"
+        default:
+          $ref: "#/components/responses/Error"
+  /cars/bookings/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Cars - Bookings]
+      operationId: getCarsBooking
+      summary: Get a booking
+      responses:
+        "200":
+          description: The booking
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CarsBooking"
+        default:
+          $ref: "#/components/responses/Error"
+  /cars/bookings/{id}/actions/cancel:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [Cars - Bookings]
+      operationId: cancelCarsBooking
+      summary: Cancel a booking
+      responses:
+        "200":
+          description: The cancelled booking
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CarsBooking"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ---------------------------------------------------------------------------
+  # Payments: Cards (PCI-scoped host) and 3DS Sessions
+  # ---------------------------------------------------------------------------
+  /payments/cards:
+    servers:
+      - url: https://api.duffel.cards
+        description: PCI-scoped host for card tokenisation
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    post:
+      tags: [Cards]
+      operationId: createCard
+      summary: Tokenise a card
+      description: >
+        Stores card details and returns a card ID for use in payments and 3DS
+        sessions. Served from `api.duffel.cards`, not the main API host.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  $ref: "#/components/schemas/CreateCard"
+      responses:
+        "201":
+          description: The tokenised card
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Card"
+        default:
+          $ref: "#/components/responses/Error"
+  /payments/cards/{id}:
+    servers:
+      - url: https://api.duffel.cards
+        description: PCI-scoped host for card tokenisation
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      tags: [Cards]
+      operationId: deleteCard
+      summary: Delete a card
+      responses:
+        "204":
+          description: Card deleted
+        default:
+          $ref: "#/components/responses/Error"
+  /payments/three_d_secure_sessions:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    post:
+      tags: [3DS Sessions]
+      operationId: createThreeDSecureSession
+      summary: Create a 3DS session for a card payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  required: [card_id, resource_id, services]
+                  properties:
+                    card_id:
+                      type: string
+                    resource_id:
+                      type: string
+                      description: ID of the offer, order, quote or booking being paid for
+                    services:
+                      type: array
+                      items:
+                        type: object
+                        required: [id, quantity]
+                        properties:
+                          id:
+                            type: string
+                          quantity:
+                            type: integer
+                    exception:
+                      type: string
+                      enum: [secure_corporate_payment]
+                      description: Request an SCA exception
+                    cardholder_present:
+                      type: boolean
+      responses:
+        "201":
+          description: The 3DS session
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ThreeDSecureSession"
+        default:
+          $ref: "#/components/responses/Error"
+
+  # ---------------------------------------------------------------------------
+  # Identity
+  # ---------------------------------------------------------------------------
+  /identity/customer/users:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Customer Users]
+      operationId: listCustomerUsers
+      summary: List customer users
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/After"
+        - $ref: "#/components/parameters/Before"
+      responses:
+        "200":
+          description: Paginated list of customer users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CustomerUser"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Customer Users]
+      operationId: createCustomerUser
+      summary: Create a customer user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  $ref: "#/components/schemas/CreateCustomerUser"
+      responses:
+        "201":
+          description: The created customer user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CustomerUser"
+        default:
+          $ref: "#/components/responses/Error"
+  /identity/customer/users/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Customer Users]
+      operationId: getCustomerUser
+      summary: Get a customer user
+      responses:
+        "200":
+          description: The customer user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CustomerUser"
+        default:
+          $ref: "#/components/responses/Error"
+    put:
+      tags: [Customer Users]
+      operationId: updateCustomerUser
+      summary: Update a customer user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  $ref: "#/components/schemas/CreateCustomerUser"
+      responses:
+        "200":
+          description: The updated customer user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CustomerUser"
+        default:
+          $ref: "#/components/responses/Error"
+  /identity/customer/user_groups:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    get:
+      tags: [Customer User Groups]
+      operationId: listCustomerUserGroups
+      summary: List customer user groups
+      responses:
+        "200":
+          description: Customer user groups
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CustomerUserGroup"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Customer User Groups]
+      operationId: createCustomerUserGroup
+      summary: Create a customer user group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  required: [name]
+                  properties:
+                    name:
+                      type: string
+                    user_ids:
+                      type: array
+                      items:
+                        type: string
+      responses:
+        "201":
+          description: The created group
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CustomerUserGroup"
+        default:
+          $ref: "#/components/responses/Error"
+  /identity/customer/user_groups/{id}:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Customer User Groups]
+      operationId: getCustomerUserGroup
+      summary: Get a customer user group
+      responses:
+        "200":
+          description: The group
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CustomerUserGroup"
+        default:
+          $ref: "#/components/responses/Error"
+    patch:
+      tags: [Customer User Groups]
+      operationId: updateCustomerUserGroup
+      summary: Update a customer user group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    user_ids:
+                      type: array
+                      items:
+                        type: string
+      responses:
+        "200":
+          description: The updated group
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CustomerUserGroup"
+        default:
+          $ref: "#/components/responses/Error"
+    delete:
+      tags: [Customer User Groups]
+      operationId: deleteCustomerUserGroup
+      summary: Delete a customer user group
+      responses:
+        "204":
+          description: Group deleted
+        default:
+          $ref: "#/components/responses/Error"
+  /identity/component_client_keys:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+    post:
+      tags: [Component Client Keys]
+      operationId: createComponentClientKey
+      summary: Create a component client key
+      description: >
+        Creates a short-lived JWT for authenticating Duffel UI components in
+        the browser. Scope it by passing user and/or resource IDs.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    user_id:
+                      type: string
+                    order_id:
+                      type: string
+                    booking_id:
+                      type: string
+                    offer_request_id:
+                      type: string
+      responses:
+        "201":
+          description: The component client key
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      component_client_key:
+                        type: string
+                        description: JWT for use with Duffel UI components
+        default:
+          $ref: "#/components/responses/Error"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Duffel access token (test or live)
+  parameters:
+    DuffelVersion:
+      name: Duffel-Version
+      in: header
+      required: true
+      schema:
+        type: string
+        const: v2
+      description: The Duffel API version
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+      description: Maximum number of records per page
+    After:
+      name: after
+      in: query
+      schema:
+        type: string
+      description: Cursor for the page after this one
+    Before:
+      name: before
+      in: query
+      schema:
+        type: string
+      description: Cursor for the page before this one
+  responses:
+    Error:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    # -------------------------------------------------------------------------
+    # Shared
+    # -------------------------------------------------------------------------
+    ErrorResponse:
+      type: object
+      properties:
+        meta:
+          type: object
+          properties:
+            request_id:
+              type: string
+            status:
+              type: integer
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                description: Error category, e.g. `validation_error`, `airline_error`
+              title:
+                type: string
+              code:
+                type: string
+                description: Machine-readable error code
+              message:
+                type: string
+              documentation_url:
+                type: string
+                format: uri
+              source:
+                type: object
+                properties:
+                  pointer:
+                    type: string
+                  parameter:
+                    type: string
+    ListMeta:
+      type: object
+      properties:
+        limit:
+          type: integer
+        before:
+          type: ["string", "null"]
+        after:
+          type: ["string", "null"]
+          description: Cursor to pass as `after` to fetch the next page; null on the last page
+    Metadata:
+      type: object
+      maxProperties: 50
+      additionalProperties:
+        type: string
+        maxLength: 500
+      description: Arbitrary key-value pairs (keys up to 40 chars, values up to 500)
+    CabinClass:
+      type: string
+      enum: [first, business, premium_economy, economy]
+    PrivateFares:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          type: object
+          properties:
+            corporate_code:
+              type: string
+            tour_code:
+              type: string
+            tracking_reference:
+              type: string
+      description: Private fare codes keyed by airline IATA code
+    LoyaltyProgrammeAccount:
+      type: object
+      required: [airline_iata_code, account_number]
+      properties:
+        airline_iata_code:
+          type: string
+        account_number:
+          type: string
+    GeographicCoordinates:
+      type: object
+      required: [latitude, longitude]
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+
+    # -------------------------------------------------------------------------
+    # Flights: search & offers
+    # -------------------------------------------------------------------------
+    CreateOfferRequest:
+      type: object
+      required: [slices, passengers]
+      properties:
+        slices:
+          type: array
+          items:
+            type: object
+            required: [origin, destination, departure_date]
+            properties:
+              origin:
+                type: string
+                description: Origin airport or city IATA code
+              destination:
+                type: string
+                description: Destination airport or city IATA code
+              departure_date:
+                type: string
+                format: date
+              departure_time:
+                $ref: "#/components/schemas/TimeRange"
+              arrival_time:
+                $ref: "#/components/schemas/TimeRange"
+        passengers:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [adult, child, infant_without_seat]
+              age:
+                type: integer
+                description: Alternative to `type` for non-adult passengers
+              given_name:
+                type: string
+              family_name:
+                type: string
+              fare_type:
+                type: string
+                description: e.g. `student`, `contract_bulk`, `unaccompanied_minor`
+              loyalty_programme_accounts:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LoyaltyProgrammeAccount"
+        cabin_class:
+          $ref: "#/components/schemas/CabinClass"
+        max_connections:
+          type: integer
+          default: 1
+          description: Maximum connections per slice
+        private_fares:
+          $ref: "#/components/schemas/PrivateFares"
+        airline_credit_ids:
+          type: array
+          items:
+            type: string
+          description: Airline credits to evaluate against returned offers
+    TimeRange:
+      type: object
+      properties:
+        from:
+          type: string
+          description: Earliest time, HH:MM
+        to:
+          type: string
+          description: Latest time, HH:MM
+    OfferRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        cabin_class:
+          $ref: "#/components/schemas/CabinClass"
+        client_key:
+          type: string
+          description: Token for use with Duffel UI components
+        slices:
+          type: array
+          items:
+            type: object
+            properties:
+              origin:
+                $ref: "#/components/schemas/Place"
+              destination:
+                $ref: "#/components/schemas/Place"
+              origin_type:
+                type: string
+                enum: [airport, city]
+              destination_type:
+                type: string
+                enum: [airport, city]
+              departure_date:
+                type: string
+                format: date
+        passengers:
+          type: array
+          items:
+            $ref: "#/components/schemas/OfferRequestPassenger"
+        offers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Offer"
+    OfferRequestPassenger:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: ["string", "null"]
+          enum: [adult, child, infant_without_seat, null]
+        age:
+          type: ["integer", "null"]
+        given_name:
+          type: ["string", "null"]
+        family_name:
+          type: ["string", "null"]
+        fare_type:
+          type: ["string", "null"]
+        loyalty_programme_accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/LoyaltyProgrammeAccount"
+    BatchOfferRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        total_batches:
+          type: integer
+        remaining_batches:
+          type: integer
+        client_key:
+          type: string
+        offers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Offer"
+    Offer:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        partial:
+          type: boolean
+          description: True if this is a partial offer from a partial offer request
+        total_amount:
+          type: string
+        total_currency:
+          type: string
+        base_amount:
+          type: string
+        base_currency:
+          type: string
+        tax_amount:
+          type: ["string", "null"]
+        tax_currency:
+          type: ["string", "null"]
+        total_emissions_kg:
+          type: ["string", "null"]
+        owner:
+          $ref: "#/components/schemas/Airline"
+        slices:
+          type: array
+          items:
+            $ref: "#/components/schemas/OfferSlice"
+        passengers:
+          type: array
+          items:
+            $ref: "#/components/schemas/OfferRequestPassenger"
+        payment_requirements:
+          type: object
+          properties:
+            requires_instant_payment:
+              type: boolean
+            price_guarantee_expires_at:
+              type: ["string", "null"]
+              format: date-time
+            payment_required_by:
+              type: ["string", "null"]
+              format: date-time
+        available_services:
+          type: array
+          items:
+            $ref: "#/components/schemas/AvailableService"
+          description: Only populated when requested with `return_available_services`
+        passenger_identity_documents_required:
+          type: boolean
+        supported_passenger_identity_document_types:
+          type: array
+          items:
+            type: string
+        conditions:
+          $ref: "#/components/schemas/OfferConditions"
+        private_fares:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              corporate_code:
+                type: string
+              tracking_reference:
+                type: string
+    OfferConditions:
+      type: object
+      properties:
+        change_before_departure:
+          $ref: "#/components/schemas/OfferCondition"
+        refund_before_departure:
+          $ref: "#/components/schemas/OfferCondition"
+    OfferCondition:
+      type: ["object", "null"]
+      properties:
+        allowed:
+          type: boolean
+        penalty_amount:
+          type: ["string", "null"]
+        penalty_currency:
+          type: ["string", "null"]
+    OfferSlice:
+      type: object
+      properties:
+        id:
+          type: string
+        origin:
+          $ref: "#/components/schemas/Place"
+        destination:
+          $ref: "#/components/schemas/Place"
+        origin_type:
+          type: string
+          enum: [airport, city]
+        destination_type:
+          type: string
+          enum: [airport, city]
+        duration:
+          type: ["string", "null"]
+          description: ISO 8601 duration
+        fare_brand_name:
+          type: ["string", "null"]
+        segments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Segment"
+        conditions:
+          type: object
+          properties:
+            change_before_departure:
+              $ref: "#/components/schemas/OfferCondition"
+    Segment:
+      type: object
+      properties:
+        id:
+          type: string
+        origin:
+          $ref: "#/components/schemas/Place"
+        destination:
+          $ref: "#/components/schemas/Place"
+        origin_terminal:
+          type: ["string", "null"]
+        destination_terminal:
+          type: ["string", "null"]
+        departing_at:
+          type: string
+          format: date-time
+        arriving_at:
+          type: string
+          format: date-time
+        duration:
+          type: ["string", "null"]
+        distance:
+          type: ["string", "null"]
+          description: Distance in kilometres
+        marketing_carrier:
+          $ref: "#/components/schemas/Airline"
+        marketing_carrier_flight_number:
+          type: string
+        operating_carrier:
+          $ref: "#/components/schemas/Airline"
+        operating_carrier_flight_number:
+          type: ["string", "null"]
+        aircraft:
+          oneOf:
+            - $ref: "#/components/schemas/Aircraft"
+            - type: "null"
+        stops:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              airport:
+                $ref: "#/components/schemas/Airport"
+              arriving_at:
+                type: string
+                format: date-time
+              departing_at:
+                type: string
+                format: date-time
+              duration:
+                type: string
+        passengers:
+          type: array
+          items:
+            type: object
+            properties:
+              passenger_id:
+                type: string
+              cabin_class:
+                $ref: "#/components/schemas/CabinClass"
+              cabin_class_marketing_name:
+                type: string
+              fare_basis_code:
+                type: ["string", "null"]
+              baggages:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      enum: [checked, carry_on]
+                    quantity:
+                      type: integer
+    AvailableService:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [baggage, seat, meal, cancel_for_any_reason]
+        total_amount:
+          type: string
+        total_currency:
+          type: string
+        maximum_quantity:
+          type: integer
+        passenger_ids:
+          type: array
+          items:
+            type: string
+        segment_ids:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          description: Type-specific details, e.g. baggage weight or seat designator
+    Place:
+      type: object
+      description: An airport or city
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [airport, city]
+        name:
+          type: string
+        iata_code:
+          type: ["string", "null"]
+        iata_city_code:
+          type: ["string", "null"]
+        iata_country_code:
+          type: string
+        icao_code:
+          type: ["string", "null"]
+        latitude:
+          type: ["number", "null"]
+        longitude:
+          type: ["number", "null"]
+        time_zone:
+          type: ["string", "null"]
+        city_name:
+          type: ["string", "null"]
+        city:
+          oneOf:
+            - $ref: "#/components/schemas/City"
+            - type: "null"
+        airports:
+          type: array
+          items:
+            $ref: "#/components/schemas/Airport"
+
+    # -------------------------------------------------------------------------
+    # Flights: orders & payments
+    # -------------------------------------------------------------------------
+    CreateOrder:
+      type: object
+      required: [selected_offers, passengers]
+      properties:
+        type:
+          type: string
+          enum: [instant, hold]
+          description: Hold orders are booked unpaid and paid later via Payments
+        selected_offers:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 1
+        passengers:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreateOrderPassenger"
+        payments:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreatePayment"
+          description: Required for instant orders
+        services:
+          type: array
+          items:
+            type: object
+            required: [id, quantity]
+            properties:
+              id:
+                type: string
+              quantity:
+                type: integer
+        users:
+          type: array
+          items:
+            type: string
+          description: Customer user IDs allowed to manage this order
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+    CreateOrderPassenger:
+      type: object
+      required: [id, given_name, family_name, born_on, title, gender]
+      properties:
+        id:
+          type: string
+          description: Passenger ID from the offer
+        title:
+          type: string
+          enum: [mr, mrs, ms, miss, dr]
+        given_name:
+          type: string
+        family_name:
+          type: string
+        gender:
+          type: string
+          enum: [m, f]
+        born_on:
+          type: string
+          format: date
+        email:
+          type: string
+          format: email
+        phone_number:
+          type: string
+          description: E.164 format
+        infant_passenger_id:
+          type: ["string", "null"]
+          description: For an adult responsible for an infant
+        identity_documents:
+          type: array
+          items:
+            type: object
+            required: [type, unique_identifier, issuing_country_code]
+            properties:
+              type:
+                type: string
+                enum: [passport, tax_id, known_traveler_number, passenger_redress_number]
+              unique_identifier:
+                type: string
+              issuing_country_code:
+                type: string
+              expires_on:
+                type: string
+                format: date
+        loyalty_programme_accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/LoyaltyProgrammeAccount"
+        user_id:
+          type: string
+          description: Link this passenger to a customer user
+    CreatePayment:
+      type: object
+      required: [type, amount, currency]
+      properties:
+        type:
+          type: string
+          enum: [balance, arc_bsp_cash, card]
+        amount:
+          type: string
+        currency:
+          type: string
+        card_id:
+          type: string
+          description: Required when type is `card`
+        three_d_secure_session_id:
+          type: string
+          description: 3DS session for the card payment
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        booking_reference:
+          type: string
+          description: Airline PNR
+        type:
+          type: string
+          enum: [instant, hold]
+        awaiting_payment:
+          type: boolean
+        payment_status:
+          type: object
+          properties:
+            awaiting_payment:
+              type: boolean
+            payment_required_by:
+              type: ["string", "null"]
+              format: date-time
+            price_guarantee_expires_at:
+              type: ["string", "null"]
+              format: date-time
+            paid_at:
+              type: ["string", "null"]
+              format: date-time
+        total_amount:
+          type: string
+        total_currency:
+          type: string
+        base_amount:
+          type: ["string", "null"]
+        base_currency:
+          type: ["string", "null"]
+        tax_amount:
+          type: ["string", "null"]
+        tax_currency:
+          type: ["string", "null"]
+        owner:
+          $ref: "#/components/schemas/Airline"
+        slices:
+          type: array
+          items:
+            $ref: "#/components/schemas/OfferSlice"
+        passengers:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderPassenger"
+        services:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              type:
+                type: string
+              total_amount:
+                type: string
+              total_currency:
+                type: string
+              quantity:
+                type: integer
+              passenger_ids:
+                type: array
+                items:
+                  type: string
+              segment_ids:
+                type: array
+                items:
+                  type: string
+              metadata:
+                type: object
+        documents:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                description: e.g. `electronic_ticket`
+              unique_identifier:
+                type: string
+              passenger_ids:
+                type: array
+                items:
+                  type: string
+        conditions:
+          $ref: "#/components/schemas/OfferConditions"
+        cancellation:
+          oneOf:
+            - $ref: "#/components/schemas/OrderCancellation"
+            - type: "null"
+        airline_initiated_changes:
+          type: array
+          items:
+            $ref: "#/components/schemas/AirlineInitiatedChange"
+        changes:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderChange"
+        content:
+          type: string
+          enum: [managed, self_managed]
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        users:
+          type: array
+          items:
+            type: string
+    OrderPassenger:
+      allOf:
+        - $ref: "#/components/schemas/CreateOrderPassenger"
+        - type: object
+          properties:
+            type:
+              type: string
+              enum: [adult, child, infant_without_seat]
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        type:
+          type: string
+          enum: [balance, arc_bsp_cash, card]
+        amount:
+          type: string
+        currency:
+          type: string
+        order_id:
+          type: string
+    SeatMap:
+      type: object
+      properties:
+        id:
+          type: string
+        slice_id:
+          type: string
+        segment_id:
+          type: string
+        cabins:
+          type: array
+          items:
+            type: object
+            properties:
+              cabin_class:
+                $ref: "#/components/schemas/CabinClass"
+              deck:
+                type: integer
+              aisles:
+                type: integer
+              wings:
+                type: object
+                properties:
+                  first_row_index:
+                    type: integer
+                  last_row_index:
+                    type: integer
+              rows:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    sections:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          elements:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                type:
+                                  type: string
+                                  enum: [seat, bassinet, empty, exit_row, lavatory, galley, closet, stairs]
+                                designator:
+                                  type: string
+                                name:
+                                  type: string
+                                disclosures:
+                                  type: array
+                                  items:
+                                    type: string
+                                available_services:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      id:
+                                        type: string
+                                      passenger_id:
+                                        type: string
+                                      total_amount:
+                                        type: string
+                                      total_currency:
+                                        type: string
+
+    # -------------------------------------------------------------------------
+    # Flights: cancellations & changes
+    # -------------------------------------------------------------------------
+    OrderCancellation:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        order_id:
+          type: string
+        expires_at:
+          type: ["string", "null"]
+          format: date-time
+        confirmed_at:
+          type: ["string", "null"]
+          format: date-time
+        refund_amount:
+          type: ["string", "null"]
+        refund_currency:
+          type: ["string", "null"]
+        refund_to:
+          type: string
+          enum: [arc_bsp_cash, balance, card, voucher, awaiting_payment, airline_credits]
+        airline_credits:
+          type: array
+          items:
+            $ref: "#/components/schemas/AirlineCredit"
+    OrderChangeRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        order_id:
+          type: string
+        slices:
+          type: object
+          properties:
+            add:
+              type: array
+              items:
+                type: object
+            remove:
+              type: array
+              items:
+                type: object
+        order_change_offers:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderChangeOffer"
+    OrderChangeOffer:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        order_change_id:
+          type: ["string", "null"]
+          description: Set once an order change has been created from this offer
+        change_total_amount:
+          type: ["string", "null"]
+          description: Net amount payable (negative = refund)
+        change_total_currency:
+          type: ["string", "null"]
+        new_total_amount:
+          type: ["string", "null"]
+        new_total_currency:
+          type: ["string", "null"]
+        penalty_total_amount:
+          type: ["string", "null"]
+        penalty_total_currency:
+          type: ["string", "null"]
+        refund_to:
+          type: string
+          enum: [arc_bsp_cash, balance, card, voucher, awaiting_payment, airline_credits]
+        slices:
+          type: object
+          properties:
+            add:
+              type: array
+              items:
+                $ref: "#/components/schemas/OfferSlice"
+            remove:
+              type: array
+              items:
+                $ref: "#/components/schemas/OfferSlice"
+        conditions:
+          $ref: "#/components/schemas/OfferConditions"
+    OrderChange:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: ["string", "null"]
+          format: date-time
+        confirmed_at:
+          type: ["string", "null"]
+          format: date-time
+        order_id:
+          type: string
+        change_total_amount:
+          type: ["string", "null"]
+        change_total_currency:
+          type: ["string", "null"]
+        new_total_amount:
+          type: ["string", "null"]
+        new_total_currency:
+          type: ["string", "null"]
+        penalty_total_amount:
+          type: ["string", "null"]
+        penalty_total_currency:
+          type: ["string", "null"]
+        refund_to:
+          type: string
+          enum: [arc_bsp_cash, balance, card, voucher, awaiting_payment, airline_credits]
+        slices:
+          type: object
+          properties:
+            add:
+              type: array
+              items:
+                $ref: "#/components/schemas/OfferSlice"
+            remove:
+              type: array
+              items:
+                $ref: "#/components/schemas/OfferSlice"
+    AirlineInitiatedChange:
+      type: object
+      properties:
+        id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        order_id:
+          type: string
+        action_taken:
+          type: ["string", "null"]
+          enum: [accepted, cancelled, changed, null]
+        action_taken_at:
+          type: ["string", "null"]
+          format: date-time
+        available_actions:
+          type: array
+          items:
+            type: string
+            enum: [accept, cancel, change, update]
+        added:
+          type: array
+          items:
+            $ref: "#/components/schemas/OfferSlice"
+        removed:
+          type: array
+          items:
+            $ref: "#/components/schemas/OfferSlice"
+        travel_agent_ticket:
+          type: ["object", "null"]
+    CreateAirlineCredit:
+      type: object
+      required: [airline_iata_code, amount, amount_currency, code, expires_at, issued_on, type]
+      properties:
+        airline_iata_code:
+          type: string
+          description: Two-character IATA code of the issuing airline
+        amount:
+          type: string
+        amount_currency:
+          type: string
+        code:
+          type: string
+          description: Code identifying the credit to the airline
+        expires_at:
+          type: string
+          format: date-time
+        issued_on:
+          type: string
+          format: date
+        type:
+          type: string
+          enum: [eticket, mco, emd]
+        user_id:
+          type: string
+          description: Customer user the credit belongs to (or supply given/family name)
+        given_name:
+          type: string
+        family_name:
+          type: string
+    AirlineCredit:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        airline_iata_code:
+          type: ["string", "null"]
+        amount:
+          type: ["string", "null"]
+        amount_currency:
+          type: ["string", "null"]
+        code:
+          type: ["string", "null"]
+        type:
+          type: ["string", "null"]
+          enum: [eticket, mco, emd, null]
+        issued_on:
+          type: ["string", "null"]
+          format: date
+        expires_at:
+          type: ["string", "null"]
+          format: date-time
+        invalidated_at:
+          type: ["string", "null"]
+          format: date-time
+        spent_at:
+          type: ["string", "null"]
+          format: date-time
+        credit_name:
+          type: ["string", "null"]
+        credit_code:
+          type: ["string", "null"]
+        credit_amount:
+          type: ["string", "null"]
+        credit_currency:
+          type: ["string", "null"]
+        penalty_amount:
+          type: ["string", "null"]
+        penalty_currency:
+          type: ["string", "null"]
+        order_id:
+          type: ["string", "null"]
+        passenger_id:
+          type: ["string", "null"]
+        user_id:
+          type: ["string", "null"]
+        given_name:
+          type: ["string", "null"]
+        family_name:
+          type: ["string", "null"]
+
+    # -------------------------------------------------------------------------
+    # Supporting resources
+    # -------------------------------------------------------------------------
+    Airline:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        iata_code:
+          type: ["string", "null"]
+        conditions_of_carriage_url:
+          type: ["string", "null"]
+          format: uri
+        logo_symbol_url:
+          type: ["string", "null"]
+          format: uri
+        logo_lockup_url:
+          type: ["string", "null"]
+          format: uri
+    Aircraft:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        iata_code:
+          type: ["string", "null"]
+    Airport:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        iata_code:
+          type: ["string", "null"]
+        icao_code:
+          type: ["string", "null"]
+        iata_country_code:
+          type: string
+        iata_city_code:
+          type: ["string", "null"]
+        city_name:
+          type: ["string", "null"]
+        city:
+          oneOf:
+            - $ref: "#/components/schemas/City"
+            - type: "null"
+        latitude:
+          type: ["number", "null"]
+        longitude:
+          type: ["number", "null"]
+        time_zone:
+          type: ["string", "null"]
+    City:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        iata_code:
+          type: string
+        iata_country_code:
+          type: string
+        airports:
+          type: array
+          items:
+            $ref: "#/components/schemas/Airport"
+    LoyaltyProgramme:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        owner_airline_id:
+          type: string
+        alliance:
+          type: ["string", "null"]
+        logo_url:
+          type: ["string", "null"]
+          format: uri
+
+    # -------------------------------------------------------------------------
+    # Webhooks
+    # -------------------------------------------------------------------------
+    Webhook:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        url:
+          type: string
+          format: uri
+        active:
+          type: boolean
+        events:
+          type: array
+          items:
+            type: string
+        secret:
+          type: ["string", "null"]
+          description: Signing secret; only returned on creation
+    WebhookEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        type:
+          type: string
+          description: e.g. `order.created`, `order.airline_initiated_change_detected`
+        object:
+          type: object
+          description: The resource the event relates to
+    WebhookDelivery:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        webhook_id:
+          type: string
+        event_id:
+          type: string
+        delivery_success:
+          type: boolean
+        response_status_code:
+          type: ["integer", "null"]
+        url:
+          type: string
+          format: uri
+
+    # -------------------------------------------------------------------------
+    # Stays
+    # -------------------------------------------------------------------------
+    StaysSearchParams:
+      type: object
+      required: [check_in_date, check_out_date, rooms, guests]
+      properties:
+        check_in_date:
+          type: string
+          format: date
+        check_out_date:
+          type: string
+          format: date
+        rooms:
+          type: integer
+          minimum: 1
+        guests:
+          type: array
+          items:
+            type: object
+            required: [type]
+            properties:
+              type:
+                type: string
+                enum: [adult, child]
+              age:
+                type: integer
+                description: Required for children
+        location:
+          type: object
+          description: Search around coordinates (mutually exclusive with accommodation)
+          properties:
+            radius:
+              type: integer
+              description: Radius in kilometres
+            geographic_coordinates:
+              $ref: "#/components/schemas/GeographicCoordinates"
+        accommodation:
+          type: object
+          description: Search specific accommodation by ID
+          properties:
+            ids:
+              type: array
+              items:
+                type: string
+            fetch_rates:
+              type: boolean
+    StaysSearchResult:
+      type: object
+      properties:
+        id:
+          type: string
+        check_in_date:
+          type: string
+          format: date
+        check_out_date:
+          type: string
+          format: date
+        rooms:
+          type: integer
+        guests:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+        cheapest_rate_total_amount:
+          type: string
+        cheapest_rate_currency:
+          type: string
+        cheapest_rate_public_amount:
+          type: ["string", "null"]
+        accommodation:
+          $ref: "#/components/schemas/StaysAccommodation"
+    StaysAccommodation:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        rating:
+          type: ["integer", "null"]
+          description: Star rating
+        review_score:
+          type: ["number", "null"]
+        email:
+          type: ["string", "null"]
+        phone_number:
+          type: ["string", "null"]
+        check_in_information:
+          type: ["object", "null"]
+          properties:
+            check_in_after_time:
+              type: string
+            check_out_before_time:
+              type: string
+        location:
+          type: object
+          properties:
+            geographic_coordinates:
+              $ref: "#/components/schemas/GeographicCoordinates"
+            address:
+              type: object
+              properties:
+                line_one:
+                  type: string
+                city_name:
+                  type: string
+                region:
+                  type: ["string", "null"]
+                postal_code:
+                  type: string
+                country_code:
+                  type: string
+        photos:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+                format: uri
+        amenities:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              description:
+                type: string
+        brand:
+          oneOf:
+            - $ref: "#/components/schemas/StaysBrand"
+            - type: "null"
+        chain:
+          oneOf:
+            - $ref: "#/components/schemas/StaysChain"
+            - type: "null"
+        rooms:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaysRoom"
+        key_collection:
+          type: ["object", "null"]
+        supported_loyalty_programme:
+          type: ["string", "null"]
+    StaysAccommodationSuggestion:
+      type: object
+      properties:
+        accommodation_id:
+          type: string
+        accommodation_name:
+          type: string
+        accommodation_location:
+          type: object
+          properties:
+            geographic_coordinates:
+              $ref: "#/components/schemas/GeographicCoordinates"
+    StaysRoom:
+      type: object
+      properties:
+        name:
+          type: string
+        photos:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+                format: uri
+        beds:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              count:
+                type: integer
+        rates:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaysRate"
+    StaysRate:
+      type: object
+      properties:
+        id:
+          type: string
+        total_amount:
+          type: string
+        total_currency:
+          type: string
+        base_amount:
+          type: ["string", "null"]
+        base_currency:
+          type: ["string", "null"]
+        tax_amount:
+          type: ["string", "null"]
+        tax_currency:
+          type: ["string", "null"]
+        fee_amount:
+          type: ["string", "null"]
+        fee_currency:
+          type: ["string", "null"]
+        due_at_accommodation_amount:
+          type: ["string", "null"]
+        due_at_accommodation_currency:
+          type: ["string", "null"]
+        public_amount:
+          type: ["string", "null"]
+        public_currency:
+          type: ["string", "null"]
+        board_type:
+          type: ["string", "null"]
+          description: e.g. `room_only`, `breakfast`, `all_inclusive`
+        payment_type:
+          type: string
+          enum: [pay_now, guarantee, deferred_payment, card_required]
+        available_payment_methods:
+          type: array
+          items:
+            type: string
+        cancellation_timeline:
+          type: array
+          items:
+            type: object
+            properties:
+              refund_amount:
+                type: string
+              currency:
+                type: string
+              before:
+                type: string
+                format: date-time
+        conditions:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              description:
+                type: string
+        negotiated_rate_code:
+          type: ["string", "null"]
+        source:
+          type: ["string", "null"]
+        supplier:
+          type: ["string", "null"]
+        quantity_available:
+          type: ["integer", "null"]
+        loyalty_programme:
+          type: ["object", "null"]
+    StaysQuote:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        check_in_date:
+          type: string
+          format: date
+        check_out_date:
+          type: string
+          format: date
+        rooms:
+          type: integer
+        guests:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+        total_amount:
+          type: string
+        total_currency:
+          type: string
+        base_amount:
+          type: ["string", "null"]
+        base_currency:
+          type: ["string", "null"]
+        tax_amount:
+          type: ["string", "null"]
+        tax_currency:
+          type: ["string", "null"]
+        fee_amount:
+          type: ["string", "null"]
+        fee_currency:
+          type: ["string", "null"]
+        due_at_accommodation_amount:
+          type: ["string", "null"]
+        due_at_accommodation_currency:
+          type: ["string", "null"]
+        accommodation:
+          $ref: "#/components/schemas/StaysAccommodation"
+        rate:
+          $ref: "#/components/schemas/StaysRate"
+        supported_loyalty_programme:
+          type: ["string", "null"]
+    CreateStaysBooking:
+      type: object
+      required: [quote_id, guests, email, phone_number]
+      properties:
+        quote_id:
+          type: string
+        guests:
+          type: array
+          items:
+            type: object
+            required: [given_name, family_name]
+            properties:
+              given_name:
+                type: string
+              family_name:
+                type: string
+              born_on:
+                type: string
+                format: date
+        email:
+          type: string
+          format: email
+        phone_number:
+          type: string
+        accommodation_special_requests:
+          type: ["string", "null"]
+        loyalty_programme_account_number:
+          type: ["string", "null"]
+        payment:
+          type: object
+          properties:
+            card_id:
+              type: string
+            three_d_secure_session_id:
+              type: string
+        users:
+          type: array
+          items:
+            type: string
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+    StaysBooking:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        reference:
+          type: ["string", "null"]
+          description: Accommodation confirmation reference
+        status:
+          type: string
+          enum: [confirmed, cancelled]
+        confirmed_at:
+          type: ["string", "null"]
+          format: date-time
+        cancelled_at:
+          type: ["string", "null"]
+          format: date-time
+        check_in_date:
+          type: string
+          format: date
+        check_out_date:
+          type: string
+          format: date
+        rooms:
+          type: integer
+        guests:
+          type: array
+          items:
+            type: object
+            properties:
+              given_name:
+                type: string
+              family_name:
+                type: string
+        email:
+          type: string
+        phone_number:
+          type: ["string", "null"]
+        accommodation:
+          $ref: "#/components/schemas/StaysAccommodation"
+        accommodation_special_requests:
+          type: ["string", "null"]
+        loyalty_programme_account_number:
+          type: ["string", "null"]
+        key_collection:
+          type: ["object", "null"]
+        payment_status:
+          type: ["string", "null"]
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        users:
+          type: array
+          items:
+            type: string
+    StaysBrand:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    StaysChain:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    CreateStaysNegotiatedRate:
+      type: object
+      properties:
+        accommodation_id:
+          type: string
+        code:
+          type: string
+          description: Negotiated rate code agreed with the accommodation
+        name:
+          type: string
+    StaysNegotiatedRate:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        accommodation_id:
+          type: string
+        code:
+          type: string
+        name:
+          type: ["string", "null"]
+    StaysReview:
+      type: object
+      properties:
+        reviewer_name:
+          type: string
+        score:
+          type: number
+        text:
+          type: ["string", "null"]
+        created_at:
+          type: string
+          format: date-time
+    StaysLoyaltyProgramme:
+      type: object
+      properties:
+        reference:
+          type: string
+        name:
+          type: string
+        logo_url_svg:
+          type: ["string", "null"]
+          format: uri
+
+    # -------------------------------------------------------------------------
+    # Cars
+    # -------------------------------------------------------------------------
+    CarsSearchParams:
+      type: object
+      required: [driver, pickup_date, pickup_time, pickup_location, dropoff_date, dropoff_time, dropoff_location]
+      properties:
+        driver:
+          $ref: "#/components/schemas/CarsDriver"
+        pickup_date:
+          type: string
+          format: date
+        pickup_time:
+          type: string
+          description: HH:MM
+        pickup_location:
+          $ref: "#/components/schemas/CarsLocationInput"
+        dropoff_date:
+          type: string
+          format: date
+        dropoff_time:
+          type: string
+          description: HH:MM
+        dropoff_location:
+          $ref: "#/components/schemas/CarsLocationInput"
+    CarsDriver:
+      type: object
+      properties:
+        age:
+          type: integer
+        given_name:
+          type: string
+        family_name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone_number:
+          type: string
+    CarsLocationInput:
+      type: object
+      properties:
+        iata_code:
+          type: string
+          description: Airport IATA code
+        geographic_coordinates:
+          $ref: "#/components/schemas/GeographicCoordinates"
+    CarsSearch:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        driver:
+          $ref: "#/components/schemas/CarsDriver"
+        pickup_date:
+          type: string
+          format: date
+        pickup_time:
+          type: string
+        pickup_location:
+          type: object
+        dropoff_date:
+          type: string
+          format: date
+        dropoff_time:
+          type: string
+        dropoff_location:
+          type: object
+        rates:
+          type: array
+          items:
+            $ref: "#/components/schemas/CarsRate"
+    CarsRate:
+      type: object
+      properties:
+        id:
+          type: string
+        total_amount:
+          type: string
+        total_currency:
+          type: string
+        base_amount:
+          type: ["string", "null"]
+        base_currency:
+          type: ["string", "null"]
+        payment_type:
+          type: string
+          enum: [postpaid, guarantee, prepaid]
+        car:
+          $ref: "#/components/schemas/Car"
+        supplier:
+          $ref: "#/components/schemas/CarsSupplier"
+        mileage:
+          $ref: "#/components/schemas/CarsMileage"
+        charges:
+          type: ["array", "null"]
+          items:
+            type: object
+        conditions:
+          type: array
+          items:
+            type: object
+    Car:
+      type: object
+      properties:
+        name:
+          type: ["string", "null"]
+        category:
+          type: ["string", "null"]
+        transmission:
+          type: ["string", "null"]
+        doors:
+          type: ["integer", "null"]
+        seats:
+          type: ["integer", "null"]
+        air_conditioning:
+          type: ["boolean", "null"]
+        fuel_type:
+          type: ["string", "null"]
+        photo_url:
+          type: ["string", "null"]
+          format: uri
+        acriss_code:
+          type: ["string", "null"]
+    CarsSupplier:
+      type: object
+      properties:
+        name:
+          type: string
+        logo_url:
+          type: ["string", "null"]
+          format: uri
+    CarsMileage:
+      type: ["object", "null"]
+      properties:
+        unlimited:
+          type: boolean
+        allowance:
+          type: ["integer", "null"]
+        unit:
+          type: ["string", "null"]
+    CarsQuote:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        rate_id:
+          type: string
+        search_id:
+          type: string
+        total_amount:
+          type: string
+        total_currency:
+          type: string
+        base_amount:
+          type: ["string", "null"]
+        base_currency:
+          type: ["string", "null"]
+        payment_type:
+          type: string
+          enum: [postpaid, guarantee, prepaid]
+        pickup_date:
+          type: string
+          format: date
+        pickup_time:
+          type: string
+        pickup_location:
+          type: object
+        dropoff_date:
+          type: string
+          format: date
+        dropoff_time:
+          type: string
+        dropoff_location:
+          type: object
+        car:
+          $ref: "#/components/schemas/Car"
+        supplier:
+          $ref: "#/components/schemas/CarsSupplier"
+        mileage:
+          $ref: "#/components/schemas/CarsMileage"
+        charges:
+          type: ["array", "null"]
+          items:
+            type: object
+        conditions:
+          type: array
+          items:
+            type: object
+        privacy_policies:
+          type: ["array", "null"]
+          items:
+            type: object
+    CreateCarsBooking:
+      type: object
+      required: [quote_id, driver]
+      properties:
+        quote_id:
+          type: string
+        driver:
+          $ref: "#/components/schemas/CarsDriver"
+        payment:
+          type: object
+          properties:
+            card_id:
+              type: string
+            three_d_secure_session_id:
+              type: string
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        users:
+          type: array
+          items:
+            type: string
+        inbound_flight_number:
+          type: ["string", "null"]
+        supplier_loyalty_programme_account_number:
+          type: ["string", "null"]
+    CarsBooking:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        reference:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [confirmed, cancelled]
+        quote_id:
+          type: string
+        driver:
+          $ref: "#/components/schemas/CarsDriver"
+        car:
+          $ref: "#/components/schemas/Car"
+        supplier:
+          $ref: "#/components/schemas/CarsSupplier"
+        pickup_date:
+          type: string
+          format: date
+        pickup_time:
+          type: string
+        pickup_location:
+          type: object
+        dropoff_date:
+          type: string
+          format: date
+        dropoff_time:
+          type: string
+        dropoff_location:
+          type: object
+        total_amount:
+          type: string
+        total_currency:
+          type: string
+        base_amount:
+          type: ["string", "null"]
+        base_currency:
+          type: ["string", "null"]
+        payment_type:
+          type: string
+          enum: [postpaid, guarantee, prepaid]
+        charges:
+          type: ["array", "null"]
+          items:
+            type: object
+        conditions:
+          type: array
+          items:
+            type: object
+        mileage:
+          $ref: "#/components/schemas/CarsMileage"
+        confirmed_at:
+          type: ["string", "null"]
+          format: date-time
+        cancelled_at:
+          type: ["string", "null"]
+          format: date-time
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        users:
+          type: array
+          items:
+            type: string
+        privacy_policies:
+          type: ["array", "null"]
+          items:
+            type: object
+
+    # -------------------------------------------------------------------------
+    # Payments: cards & 3DS
+    # -------------------------------------------------------------------------
+    CreateCard:
+      type: object
+      required: [number, expiry_month, expiry_year, cvc, name, address_line_1, address_city, address_country_code, address_postal_code]
+      properties:
+        number:
+          type: string
+        expiry_month:
+          type: string
+          description: MM
+        expiry_year:
+          type: string
+          description: YY
+        cvc:
+          type: string
+        name:
+          type: string
+          description: Cardholder name
+        address_line_1:
+          type: string
+        address_line_2:
+          type: ["string", "null"]
+        address_city:
+          type: string
+        address_region:
+          type: ["string", "null"]
+        address_postal_code:
+          type: string
+        address_country_code:
+          type: string
+        multi_use:
+          type: boolean
+          default: false
+          description: Whether the card can be reused for multiple payments
+    Card:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        last_4_digits:
+          type: string
+        brand:
+          type: string
+          description: e.g. `visa`, `mastercard`, `american_express`
+        multi_use:
+          type: boolean
+        unavailable_at:
+          type: ["string", "null"]
+          format: date-time
+          description: When a single-use card becomes unusable
+    ThreeDSecureSession:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        card_id:
+          type: string
+        resource_id:
+          type: string
+        status:
+          type: string
+          enum: [client_action_required, ready_for_payment, failed, expired]
+        client_id:
+          type: ["string", "null"]
+          description: Token for the client-side 3DS challenge component
+
+    # -------------------------------------------------------------------------
+    # Identity
+    # -------------------------------------------------------------------------
+    CreateCustomerUser:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+        given_name:
+          type: ["string", "null"]
+        family_name:
+          type: ["string", "null"]
+        phone_number:
+          type: ["string", "null"]
+        group_id:
+          type: ["string", "null"]
+    CustomerUser:
+      type: object
+      properties:
+        id:
+          type: string
+        live_mode:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        email:
+          type: string
+          format: email
+        given_name:
+          type: ["string", "null"]
+        family_name:
+          type: ["string", "null"]
+        phone_number:
+          type: ["string", "null"]
+        group:
+          oneOf:
+            - $ref: "#/components/schemas/CustomerUserGroup"
+            - type: "null"
+    CustomerUserGroup:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        user_ids:
+          type: array
+          items:
+            type: string
