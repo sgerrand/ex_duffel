@@ -38,7 +38,7 @@ Cross-cutting conventions:
 
 No network. Every test builds a client with `req_options: [plug: {Req.Test, __MODULE__}, retry: false]` and stubs responses with `Req.Test.stub/2` + `Req.Test.json/2`. All test modules are `async: true`. Follow this pattern for new resources; assert on `conn.request_path`, `conn.query_params`, and decoded request bodies in the stub.
 
-When adding a resource, verify endpoint paths/params against the live Duffel v2 docs (https://duffel.com/docs/api) first — resources are not uniformly RESTful (e.g. two-step cancellations/changes, action sub-paths like `/actions/confirm`).
+When adding a resource, verify endpoint paths/params/bodies against `openapi.yaml` in the repo root (OpenAPI 3.1 spec of the Duffel v2 API) — it is the source of truth, more reliable than scraping the live docs. Resources are not uniformly RESTful (e.g. two-step cancellations/changes, action sub-paths like `/actions/confirm`; webhooks have no single-GET endpoint).
 
 ## Commits
 
