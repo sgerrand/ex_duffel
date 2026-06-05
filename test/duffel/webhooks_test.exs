@@ -37,15 +37,6 @@ defmodule Duffel.WebhooksTest do
                })
     end
 
-    test "get/2 fetches a webhook" do
-      stub(fn conn ->
-        assert conn.request_path == "/air/webhooks/sev_1"
-        Req.Test.json(conn, %{"data" => %{"id" => "sev_1"}})
-      end)
-
-      assert {:ok, %{"id" => "sev_1"}} = Webhooks.get(client(), "sev_1")
-    end
-
     test "list/2 returns a page" do
       stub(fn conn ->
         Req.Test.json(conn, %{

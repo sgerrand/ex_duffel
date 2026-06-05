@@ -84,5 +84,14 @@ defmodule Duffel.PaymentsTest do
       assert client() |> Payments.stream(order_id: "ord_1") |> Enum.map(& &1["id"]) ==
                ["pay_1"]
     end
+
+    test "list/1 and stream/1 default to no params" do
+      stub(fn conn ->
+        Req.Test.json(conn, %{"data" => [%{"id" => "pay_1"}], "meta" => %{"after" => nil}})
+      end)
+
+      assert {:ok, %Page{data: [%{"id" => "pay_1"}]}} = Payments.list(client())
+      assert client() |> Payments.stream() |> Enum.map(& &1["id"]) == ["pay_1"]
+    end
   end
 end

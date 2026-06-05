@@ -14,7 +14,8 @@ defmodule Duffel.Airports do
 
   ## Parameters
 
-    * `:iata_country_code` - filter by country
+    * `:iata_country_code` - filter by ISO 3166-1 alpha-2 country code
+    * `:iata_code` - filter by IATA airport code
     * `:limit` / `:after` / `:before` - pagination (see `Duffel.Page`)
 
   """

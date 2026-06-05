@@ -47,16 +47,6 @@ defmodule Duffel.Webhooks do
   end
 
   @doc """
-  Retrieves a single webhook by ID.
-  """
-  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
-  def get(client, id) when is_binary(id) do
-    with {:ok, %{"data" => data}} <- Client.get(client, "#{@path}/#{id}") do
-      {:ok, data}
-    end
-  end
-
-  @doc """
   Lists one page of webhooks.
 
   ## Parameters
@@ -80,7 +70,7 @@ defmodule Duffel.Webhooks do
   end
 
   @doc """
-  Updates a webhook's URL or active status.
+  Updates a webhook's URL, subscribed events or active status.
 
   ## Examples
 

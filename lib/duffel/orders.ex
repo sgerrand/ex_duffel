@@ -65,16 +65,13 @@ defmodule Duffel.Orders do
 
   ## Parameters
 
-    * `:booking_reference` - filter by booking reference (exact match)
-    * `:offer_id` - filter by the offer used at booking
-    * `:awaiting_payment` - filter by payment status (boolean)
+    * `:booking_reference` - filter by airline booking reference (PNR)
+    * `:awaiting_payment` - filter hold orders awaiting payment (boolean)
     * `:requires_action` - orders with unactioned airline-initiated changes
-    * `:sort` - `"payment_required_by"`, `"total_amount"`, `"created_at"`
-      or `"next_departure"`, prefix with `-` for descending
+    * `"passenger_name[]"` - filter by passenger name
+    * `:sort` - `"payment_required_by"`, `"created_at"` or
+      `"next_departure"`, prefix with `-` for descending
     * `:limit` / `:after` / `:before` - pagination (see `Duffel.Page`)
-
-  See the Duffel documentation for the full set of filters
-  (`owner_id[]`, `origin_id[]`, `passenger_name[]`, datetime ranges, ...).
   """
   @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, term()}
   def list(client, params \\ []) do

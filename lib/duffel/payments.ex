@@ -42,27 +42,27 @@ defmodule Duffel.Payments do
   end
 
   @doc """
-  Lists one page of payments for an order.
+  Lists one page of payments.
 
   ## Parameters
 
-    * `:order_id` - the order to list payments for (required)
+    * `:order_id` - filter payments by order
     * `:limit` / `:after` / `:before` - pagination (see `Duffel.Page`)
 
   """
   @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, term()}
-  def list(client, params) do
+  def list(client, params \\ []) do
     Client.list(client, @path, params)
   end
 
   @doc """
-  Lazily streams all payments for an order across pages.
+  Lazily streams all payments across pages.
 
   Takes the same parameters as `list/2`. Raises `Duffel.Error` if a page
   request fails.
   """
   @spec stream(Client.t(), keyword() | map()) :: Enumerable.t()
-  def stream(client, params) do
+  def stream(client, params \\ []) do
     Client.stream(client, @path, params)
   end
 end
