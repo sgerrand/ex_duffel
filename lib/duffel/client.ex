@@ -11,16 +11,19 @@ defmodule Duffel.Client do
   alias Duffel.{Error, Page}
 
   @base_url "https://api.duffel.com"
+  @cards_base_url "https://api.duffel.cards"
   @api_version "v2"
 
   defstruct access_token: nil,
             base_url: @base_url,
+            cards_base_url: @cards_base_url,
             api_version: @api_version,
             req_options: []
 
   @type t :: %__MODULE__{
           access_token: String.t(),
           base_url: String.t(),
+          cards_base_url: String.t(),
           api_version: String.t(),
           req_options: keyword()
         }
@@ -43,6 +46,7 @@ defmodule Duffel.Client do
     %__MODULE__{
       access_token: access_token,
       base_url: Keyword.get(opts, :base_url, @base_url),
+      cards_base_url: Keyword.get(opts, :cards_base_url, @cards_base_url),
       api_version: Keyword.get(opts, :api_version, @api_version),
       req_options: Keyword.get(opts, :req_options, [])
     }
@@ -82,6 +86,14 @@ defmodule Duffel.Client do
   @spec patch(t(), String.t(), map(), keyword()) :: response()
   def patch(%__MODULE__{} = client, path, body, opts \\ []) do
     request(client, :patch, path, Keyword.put(opts, :json, %{data: body}))
+  end
+
+  @doc """
+  Performs a `PUT` request, wrapping `body` in the `data` envelope.
+  """
+  @spec put(t(), String.t(), map(), keyword()) :: response()
+  def put(%__MODULE__{} = client, path, body, opts \\ []) do
+    request(client, :put, path, Keyword.put(opts, :json, %{data: body}))
   end
 
   @doc """
@@ -149,7 +161,7 @@ defmodule Duffel.Client do
 
     [
       method: method,
-      base_url: client.base_url,
+      base_url: Keyword.get(opts, :base_url, client.base_url),
       url: path,
       auth: {:bearer, client.access_token},
       headers: headers,
