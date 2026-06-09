@@ -170,6 +170,8 @@ than 5 minutes (configurable via `:tolerance`).
 
 ## Resources
 
+### Flights
+
 | Module | Duffel resource |
 | --- | --- |
 | `Duffel.OfferRequests` | Search for flights |
@@ -190,6 +192,21 @@ than 5 minutes (configurable via `:tolerance`).
 | `Duffel.Airlines` / `Duffel.Airports` / `Duffel.Aircraft` / `Duffel.Cities` | Reference data |
 | `Duffel.LoyaltyProgrammes` | Loyalty programme reference data |
 | `Duffel.Places` | Airport/city autocomplete |
+
+### Stays
+
+| Module | Duffel resource |
+| --- | --- |
+| `Duffel.Stays.Search` | Search accommodation, fetch all rates |
+| `Duffel.Stays.Accommodation` | Lookup, suggestions, reviews |
+| `Duffel.Stays.Quotes` | Confirm a rate before booking |
+| `Duffel.Stays.Bookings` | Book, manage, cancel, payment instructions |
+| `Duffel.Stays.NegotiatedRates` | Manage private rates |
+| `Duffel.Stays.Brands` / `Duffel.Stays.Chains` | Reference data |
+| `Duffel.Stays.LoyaltyProgrammes` | Loyalty programme reference data |
+
+The Stays booking flow: search → `fetch_all_rates` → create a quote →
+create a booking from the quote.
 
 ## Testing your app
 
