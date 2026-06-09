@@ -208,6 +208,17 @@ than 5 minutes (configurable via `:tolerance`).
 The Stays booking flow: search → `fetch_all_rates` → create a quote →
 create a booking from the quote.
 
+### Cars
+
+| Module | Duffel resource |
+| --- | --- |
+| `Duffel.Cars.Search` | Search for rental cars |
+| `Duffel.Cars.Quotes` | Confirm a rate before booking |
+| `Duffel.Cars.Bookings` | Book, retrieve, cancel |
+
+The Cars booking flow: search → create a quote → create a booking from
+the quote.
+
 ## Testing your app
 
 The client accepts `req_options`, so you can stub HTTP with
