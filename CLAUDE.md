@@ -23,14 +23,15 @@ Three layers; everything funnels through `Duffel.Client`:
 
 - `Duffel` (`lib/duffel.ex`) — entry point. `Duffel.new/1` builds a `%Duffel.Client{}` struct; `Duffel.new/0` reads the `:duffel` application environment. The client struct is passed explicitly to every resource function (multi-tenant by design; no global state).
 - `Duffel.Client` (`lib/duffel/client.ex`) — Req-based transport. Owns: bearer auth, `Duffel-Version` header, gzip, `retry: :transient` (auto-retries 429/5xx), the `data` request/response envelope, `Idempotency-Key` header (via `:idempotency_key` opt on `post`), pagination (`list/3` → `Duffel.Page`, `stream/3` → lazy `Stream.resource` following `meta.after` cursors).
-- Resource modules (`lib/duffel/*.ex`) — thin, no macros. Each wraps `Client.get/post/patch/delete/list/stream` and unwraps the response `"data"` key. `lib/duffel/offer_requests.ex` is the canonical template for new resources.
+- Resource modules (`lib/duffel/*.ex`, plus `lib/duffel/{stays,cars,identity}/*.ex`) — thin, no macros. Each wraps `Client.get/post/put/patch/delete/list/stream` and unwraps the response `"data"` key. `lib/duffel/offer_requests.ex` is the canonical template for new resources.
 
 Cross-cutting conventions:
 
 - All calls return `{:ok, result} | {:error, %Duffel.Error{}}`. `Duffel.Error` is a `defexception` (returned in tuples normally, raised by `stream`). Its `type` field is an atom mapped from a whitelist; unknown API types become `:unknown_error`.
 - Responses are raw string-keyed maps — no typed structs (deliberate; revisit per-resource if needed).
 - `Duffel.Page` uses `after_cursor`/`before_cursor` field names because `after` is a reserved word in Elixir (`page.after` won't parse).
-- POST/PATCH bodies are wrapped in `%{data: body}` by `Client.post`/`Client.patch`; callers pass the inner params only.
+- POST/PUT/PATCH bodies are wrapped in `%{data: body}` by `Client.post`/`Client.put`/`Client.patch`; callers pass the inner params only.
+- Most endpoints use the main host. `Duffel.Cards` talks to the PCI-scoped `api.duffel.cards` host instead, via the client's `cards_base_url` and a `:base_url` override passed through to `Client.request/4`.
 - `client.req_options` is merged last in `Client.request/4`, so it overrides everything — this is the seam tests use.
 - `Duffel.Webhooks.verify_signature/4` is pure (no HTTP). It deliberately implements its own constant-time compare to avoid requiring OTP 25 (`:crypto.hash_equals`) or a runtime plug dependency. Plug is a test-only dep (needed by `Req.Test`).
 

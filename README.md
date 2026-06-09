@@ -219,6 +219,24 @@ create a booking from the quote.
 The Cars booking flow: search → create a quote → create a booking from
 the quote.
 
+### Payments
+
+| Module | Duffel resource |
+| --- | --- |
+| `Duffel.Cards` | Tokenise cards (PCI-scoped `api.duffel.cards` host) |
+| `Duffel.ThreeDSecureSessions` | 3DS sessions for card payments |
+
+`Duffel.Cards` talks to `api.duffel.cards`, set via `:cards_base_url` on
+the client. Card tokens are single-use and short-lived.
+
+### Identity
+
+| Module | Duffel resource |
+| --- | --- |
+| `Duffel.Identity.CustomerUsers` | Travellers and bookers |
+| `Duffel.Identity.CustomerUserGroups` | Group users for access scoping |
+| `Duffel.Identity.ComponentClientKeys` | Browser keys for Duffel UI components |
+
 ## Testing your app
 
 The client accepts `req_options`, so you can stub HTTP with
