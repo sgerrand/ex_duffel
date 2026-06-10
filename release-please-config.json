@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
-  "last-release-sha": "cec1dcb0965730c96b1dc2bc059f512643418a14",
+  "release-as": "0.1.0",
   "packages": {
     ".": {
       "release-type": "elixir",
