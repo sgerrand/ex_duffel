@@ -6,6 +6,32 @@ defmodule Duffel.Client do
   envelope, error normalisation and cursor pagination. Resource modules
   (e.g. `Duffel.OfferRequests`) build on top of this module; most
   applications won't need to call it directly.
+
+  ## Telemetry
+
+  Every request emits a [`telemetry`](https://hexdocs.pm/telemetry) span
+  under the `[:duffel, :request]` prefix:
+
+    * `[:duffel, :request, :start]` - measurements `%{system_time, monotonic_time}`
+    * `[:duffel, :request, :stop]` - measurements `%{duration, monotonic_time}`
+    * `[:duffel, :request, :exception]` - when the request function raises
+
+  Metadata on every event: `:method`, `:path` and `:base_url`. The `:stop`
+  event also carries `:status` (the HTTP status, or `nil` on a transport
+  error) and `:result` (`:ok` or `:error`).
+
+  Attach a handler to measure request latency:
+
+      :telemetry.attach(
+        "duffel-logger",
+        [:duffel, :request, :stop],
+        fn _event, %{duration: duration}, meta, _config ->
+          ms = System.convert_time_unit(duration, :native, :millisecond)
+          Logger.info("duffel \#{meta.method} \#{meta.path} -> \#{meta.status} (\#{ms}ms)")
+        end,
+        nil
+      )
+
   """
 
   alias Duffel.{Error, Page}
@@ -154,25 +180,43 @@ defmodule Duffel.Client do
   @spec request(t(), atom(), String.t(), keyword()) :: response()
   def request(%__MODULE__{} = client, method, path, opts \\ []) do
     {idempotency_key, opts} = Keyword.pop(opts, :idempotency_key)
+    base_url = Keyword.get(opts, :base_url, client.base_url)
 
     headers =
       [{"duffel-version", client.api_version}, {"accept", "application/json"}] ++
         if idempotency_key, do: [{"idempotency-key", idempotency_key}], else: []
 
-    [
-      method: method,
-      base_url: Keyword.get(opts, :base_url, client.base_url),
-      url: path,
-      auth: {:bearer, client.access_token},
-      headers: headers,
-      compressed: true,
-      retry: :transient
-    ]
-    |> Keyword.merge(Keyword.take(opts, [:params, :json]))
-    |> Keyword.merge(client.req_options)
-    |> Req.request()
-    |> handle_response()
+    req_options =
+      [
+        method: method,
+        base_url: base_url,
+        url: path,
+        auth: {:bearer, client.access_token},
+        headers: headers,
+        compressed: true,
+        retry: :transient
+      ]
+      |> Keyword.merge(Keyword.take(opts, [:params, :json]))
+      |> Keyword.merge(client.req_options)
+
+    metadata = %{method: method, path: path, base_url: base_url}
+
+    :telemetry.span([:duffel, :request], metadata, fn ->
+      response = Req.request(req_options)
+      result = handle_response(response)
+
+      stop_metadata =
+        Map.merge(metadata, %{status: response_status(response), result: result_tag(result)})
+
+      {result, stop_metadata}
+    end)
   end
+
+  defp response_status({:ok, %Req.Response{status: status}}), do: status
+  defp response_status(_other), do: nil
+
+  defp result_tag({:ok, _body}), do: :ok
+  defp result_tag({:error, _reason}), do: :error
 
   defp handle_response({:ok, %Req.Response{status: status, body: body}})
        when status in 200..299 do

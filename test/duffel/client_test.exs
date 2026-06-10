@@ -121,6 +121,64 @@ defmodule Duffel.ClientTest do
     end
   end
 
+  describe "telemetry" do
+    setup do
+      ref = make_ref()
+
+      events = [
+        [:duffel, :request, :start],
+        [:duffel, :request, :stop],
+        [:duffel, :request, :exception]
+      ]
+
+      :telemetry.attach_many(
+        {__MODULE__, ref},
+        events,
+        fn event, measurements, metadata, _config ->
+          send(self(), {:telemetry, event, measurements, metadata})
+        end,
+        nil
+      )
+
+      on_exit(fn -> :telemetry.detach({__MODULE__, ref}) end)
+      :ok
+    end
+
+    test "emits start and stop with metadata on success" do
+      stub(fn conn -> Req.Test.json(conn, %{"data" => %{}}) end)
+
+      assert {:ok, _} = Client.get(client(), "/air/offers")
+
+      assert_received {:telemetry, [:duffel, :request, :start], %{system_time: _},
+                       %{method: :get, path: "/air/offers", base_url: "https://api.duffel.com"}}
+
+      assert_received {:telemetry, [:duffel, :request, :stop], %{duration: _},
+                       %{status: 200, result: :ok}}
+    end
+
+    test "stop carries error result and status for API errors" do
+      stub(fn conn ->
+        conn
+        |> Plug.Conn.put_status(422)
+        |> Req.Test.json(%{"errors" => [%{"type" => "validation_error"}]})
+      end)
+
+      assert {:error, _} = Client.post(client(), "/air/orders", %{})
+
+      assert_received {:telemetry, [:duffel, :request, :stop], _measurements,
+                       %{status: 422, result: :error}}
+    end
+
+    test "stop reports nil status on transport errors" do
+      stub(fn conn -> Req.Test.transport_error(conn, :econnrefused) end)
+
+      assert {:error, _} = Client.get(client(), "/air/offers")
+
+      assert_received {:telemetry, [:duffel, :request, :stop], _measurements,
+                       %{status: nil, result: :error}}
+    end
+  end
+
   describe "list/3 and stream/3" do
     test "list/3 returns a page with cursors" do
       stub(fn conn ->
