@@ -7,6 +7,8 @@ book and manage flights.
 
 Add `duffel` to your list of dependencies in `mix.exs`:
 
+<!-- x-release-please-start-version -->
+
 ```elixir
 def deps do
   [
@@ -14,6 +16,8 @@ def deps do
   ]
 end
 ```
+
+<!-- x-release-please-end -->
 
 ## Getting started
 

@@ -3,6 +3,9 @@
   "packages": {
     ".": {
       "release-type": "elixir",
+      "extra-files": [
+        "README.md"
+      ]
     }
   }
 }
