@@ -140,6 +140,26 @@ end
 Rate-limited (429) and transient server errors are retried automatically
 with backoff.
 
+## Telemetry
+
+Every request emits a [`telemetry`](https://hexdocs.pm/telemetry) span
+under the `[:duffel, :request]` prefix — `:start`, `:stop` and
+`:exception` events. Metadata carries `:method`, `:path` and `:base_url`;
+the `:stop` event also reports `:status` and `:result` (`:ok` or
+`:error`). Attach a handler to measure latency or log requests:
+
+```elixir
+:telemetry.attach(
+  "duffel-logger",
+  [:duffel, :request, :stop],
+  fn _event, %{duration: duration}, meta, _config ->
+    ms = System.convert_time_unit(duration, :native, :millisecond)
+    Logger.info("duffel #{meta.method} #{meta.path} -> #{meta.status} (#{ms}ms)")
+  end,
+  nil
+)
+```
+
 ## Webhooks
 
 Manage subscriptions and verify incoming deliveries:
