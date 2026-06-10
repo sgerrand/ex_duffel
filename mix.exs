@@ -12,6 +12,10 @@ defmodule Duffel.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       test_coverage: [summary: [threshold: 100]],
+      dialyzer: [
+        plt_local_path: "_build/plts",
+        plt_core_path: "_build/plts"
+      ],
       name: "Duffel",
       description: "An Elixir library for the Duffel API",
       source_url: @source_url,
@@ -31,7 +35,8 @@ defmodule Duffel.MixProject do
       {:req, "~> 0.5"},
       {:telemetry, "~> 1.0"},
       {:plug, "~> 1.15", only: :test},
-      {:ex_doc, "~> 0.26", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.26", only: :dev, runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
   end
 
