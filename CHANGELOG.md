@@ -8,6 +8,20 @@ From the next release onward, entries below are generated automatically by
 [release-please](https://github.com/googleapis/release-please) from
 [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [0.1.1](https://github.com/sgerrand/ex_duffel/compare/v0.1.0...v0.1.1) (2026-06-10)
+
+
+### Features
+
+* **client:** emit telemetry span for requests ([9798978](https://github.com/sgerrand/ex_duffel/commit/97989780dee9c9bc54c1721203450eb2b58c5cf5))
+
+
+### Documentation
+
+* add CHANGELOG with 0.1.0 entry ([51c3831](https://github.com/sgerrand/ex_duffel/commit/51c383197c0a1c03658d6a77a833e6f9b963f29a))
+* configure ExDoc ([032e166](https://github.com/sgerrand/ex_duffel/commit/032e166bb34cb798fe4f28685b840ef090346fa4))
+* **readme:** add telemetry section ([c8757e0](https://github.com/sgerrand/ex_duffel/commit/c8757e0ac8885f9f44218eee8d1a35e6976e8c08))
+
 ## [0.1.0] - 2026-06-09
 
 Initial release: an Elixir client for the Duffel API v2, built on
