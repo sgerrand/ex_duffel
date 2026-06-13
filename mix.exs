@@ -36,7 +36,8 @@ defmodule Duffel.MixProject do
       {:telemetry, "~> 1.0"},
       {:plug, "~> 1.15", only: :test},
       {:ex_doc, "~> 0.26", only: :dev, runtime: false},
-      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
 
