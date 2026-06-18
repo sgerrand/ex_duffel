@@ -119,6 +119,34 @@ client
 
 Streams raise `Duffel.Error` on request failure.
 
+## Typed responses
+
+Resource functions return raw string-keyed maps. When you want a struct
+with named fields instead, pass the map to the matching schema's
+`from_map/1`:
+
+```elixir
+{:ok, order} = Duffel.Orders.get(client, "ord_123")
+order = Duffel.Schema.Order.from_map(order)
+
+order.booking_reference
+#=> "RZPNX8"
+
+# nested resources are decoded too
+hd(order.slices).segments
+#=> [%Duffel.Schema.Segment{...}, ...]
+```
+
+Schemas cover the core booking flow — `Duffel.Schema.OfferRequest`,
+`Offer`, `Order`, `Slice`, `Segment`, `Passenger` and `Payment`. Decoding
+is opt-in and shallow: fields without their own schema (such as an offer's
+`owner` airline) stay raw maps. Map over a page's data to decode a list:
+
+```elixir
+{:ok, page} = Duffel.Orders.list(client)
+orders = Enum.map(page.data, &Duffel.Schema.Order.from_map/1)
+```
+
 ## Error handling
 
 Errors mirror the [Duffel error schema](https://duffel.com/docs/api/overview/errors),

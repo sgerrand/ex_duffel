@@ -53,6 +53,16 @@ defmodule Duffel.MixProject do
           Duffel.Error,
           Duffel.Page
         ],
+        Schemas: [
+          Duffel.Schema,
+          Duffel.Schema.OfferRequest,
+          Duffel.Schema.Offer,
+          Duffel.Schema.Order,
+          Duffel.Schema.Slice,
+          Duffel.Schema.Segment,
+          Duffel.Schema.Passenger,
+          Duffel.Schema.Payment
+        ],
         Flights: [
           Duffel.OfferRequests,
           Duffel.PartialOfferRequests,

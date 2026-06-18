@@ -28,7 +28,7 @@ Three layers; everything funnels through `Duffel.Client`:
 Cross-cutting conventions:
 
 - All calls return `{:ok, result} | {:error, %Duffel.Error{}}`. `Duffel.Error` is a `defexception` (returned in tuples normally, raised by `stream`). Its `type` field is an atom mapped from a whitelist; unknown API types become `:unknown_error`.
-- Responses are raw string-keyed maps — no typed structs (deliberate; revisit per-resource if needed).
+- Resource functions return raw string-keyed maps. `Duffel.Schema.*` (`lib/duffel/schema/*.ex`) adds opt-in typed views over the core booking flow (OfferRequest, Offer, Order, Slice, Segment, Passenger, Payment): callers pass a map to `from_map/1` to get a struct. Decoding is shallow — only those seven types nest into structs; everything else stays a raw map. Fields are sourced from the response schemas in `openapi.yaml`.
 - `Duffel.Page` uses `after_cursor`/`before_cursor` field names because `after` is a reserved word in Elixir (`page.after` won't parse).
 - POST/PUT/PATCH bodies are wrapped in `%{data: body}` by `Client.post`/`Client.put`/`Client.patch`; callers pass the inner params only.
 - Most endpoints use the main host. `Duffel.Cards` talks to the PCI-scoped `api.duffel.cards` host instead, via the client's `cards_base_url` and a `:base_url` override passed through to `Client.request/4`.
