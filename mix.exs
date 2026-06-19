@@ -88,6 +88,7 @@ defmodule Duffel.MixProject do
         ],
         Stays: [
           Duffel.Stays.Search,
+          Duffel.Stays.SearchParams,
           Duffel.Stays.Accommodation,
           Duffel.Stays.Quotes,
           Duffel.Stays.Bookings,
@@ -98,6 +99,7 @@ defmodule Duffel.MixProject do
         ],
         Cars: [
           Duffel.Cars.Search,
+          Duffel.Cars.SearchParams,
           Duffel.Cars.Quotes,
           Duffel.Cars.Bookings
         ],

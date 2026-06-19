@@ -14,20 +14,20 @@ defmodule Duffel.Stays.Search do
   Searches for accommodation.
 
   Returns a map with `"results"` (the matching accommodation) and
-  `"created_at"`.
+  `"created_at"`. Build the params by hand or with
+  `Duffel.Stays.SearchParams`.
 
   ## Examples
 
-      Duffel.Stays.Search.create(client, %{
-        check_in_date: "2026-07-01",
-        check_out_date: "2026-07-03",
-        rooms: 1,
-        guests: [%{type: "adult"}],
-        location: %{
-          radius: 5,
-          geographic_coordinates: %{latitude: 51.5074, longitude: -0.1278}
-        }
-      })
+      params =
+        Duffel.Stays.SearchParams.new(
+          check_in_date: "2026-07-01",
+          check_out_date: "2026-07-03",
+          guests: [%{type: "adult"}],
+          location: Duffel.Stays.SearchParams.around(51.5074, -0.1278)
+        )
+
+      Duffel.Stays.Search.create(client, params)
 
   """
   @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, term()}

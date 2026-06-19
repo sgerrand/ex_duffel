@@ -250,6 +250,7 @@ than 5 minutes (configurable via `:tolerance`).
 | Module | Duffel resource |
 | --- | --- |
 | `Duffel.Stays.Search` | Search accommodation, fetch all rates |
+| `Duffel.Stays.SearchParams` | Build a stays search request |
 | `Duffel.Stays.Accommodation` | Lookup, suggestions, reviews |
 | `Duffel.Stays.Quotes` | Confirm a rate before booking |
 | `Duffel.Stays.Bookings` | Book, manage, cancel, payment instructions |
@@ -265,6 +266,7 @@ create a booking from the quote.
 | Module | Duffel resource |
 | --- | --- |
 | `Duffel.Cars.Search` | Search for rental cars |
+| `Duffel.Cars.SearchParams` | Build a cars search request |
 | `Duffel.Cars.Quotes` | Confirm a rate before booking |
 | `Duffel.Cars.Bookings` | Book, retrieve, cancel |
 
