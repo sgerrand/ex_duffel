@@ -15,6 +15,8 @@ defmodule Duffel.OfferRequests do
   @doc """
   Creates an offer request and kicks off a flight search.
 
+  Build the params by hand or with `Duffel.OfferRequests.SearchParams`.
+
   ## Options
 
     * `:params` - query string parameters, e.g.
@@ -22,13 +24,16 @@ defmodule Duffel.OfferRequests do
 
   ## Examples
 
-      Duffel.OfferRequests.create(client, %{
-        slices: [
-          %{origin: "LHR", destination: "JFK", departure_date: "2026-07-01"}
-        ],
-        passengers: [%{type: "adult"}],
-        cabin_class: "economy"
-      })
+      alias Duffel.OfferRequests.SearchParams
+
+      params =
+        SearchParams.new(
+          slices: [SearchParams.slice("LHR", "JFK", "2026-07-01")],
+          passengers: [SearchParams.passenger(type: "adult")],
+          cabin_class: "economy"
+        )
+
+      Duffel.OfferRequests.create(client, params)
 
   """
   @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, term()}

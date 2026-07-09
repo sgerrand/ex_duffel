@@ -13,6 +13,7 @@ defmodule Duffel.Orders do
   Creates an order from a selected offer.
 
   Pass `:idempotency_key` to guard against duplicate bookings on retries.
+  Build the params by hand or with `Duffel.Orders.CreateParams`.
 
   ## Options
 
@@ -20,27 +21,27 @@ defmodule Duffel.Orders do
 
   ## Examples
 
-      Duffel.Orders.create(
-        client,
-        %{
+      alias Duffel.Orders.CreateParams
+
+      params =
+        CreateParams.new(
           selected_offers: ["off_123"],
           passengers: [
-            %{
+            CreateParams.passenger(
               id: "pas_123",
               title: "ms",
               given_name: "Amelia",
               family_name: "Earhart",
+              gender: "f",
               born_on: "1987-07-24",
               email: "amelia@duffel.com",
               phone_number: "+442080160508"
-            }
+            )
           ],
-          payments: [
-            %{type: "balance", currency: "GBP", amount: "30.20"}
-          ]
-        },
-        idempotency_key: "booking-123"
-      )
+          payments: [CreateParams.payment(type: "balance", currency: "GBP", amount: "30.20")]
+        )
+
+      Duffel.Orders.create(client, params, idempotency_key: "booking-123")
 
   """
   @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, term()}

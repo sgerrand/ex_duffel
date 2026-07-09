@@ -65,11 +65,13 @@ defmodule Duffel.MixProject do
         ],
         Flights: [
           Duffel.OfferRequests,
+          Duffel.OfferRequests.SearchParams,
           Duffel.PartialOfferRequests,
           Duffel.BatchOfferRequests,
           Duffel.Offers,
           Duffel.SeatMaps,
           Duffel.Orders,
+          Duffel.Orders.CreateParams,
           Duffel.Payments,
           Duffel.OrderCancellations,
           Duffel.OrderChangeRequests,

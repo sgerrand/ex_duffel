@@ -227,11 +227,13 @@ than 5 minutes (configurable via `:tolerance`).
 | Module | Duffel resource |
 | --- | --- |
 | `Duffel.OfferRequests` | Search for flights |
+| `Duffel.OfferRequests.SearchParams` | Build a flight search request |
 | `Duffel.PartialOfferRequests` | Multi-step (per-slice) search |
 | `Duffel.BatchOfferRequests` | Batched search with polling |
 | `Duffel.Offers` | Offers returned by a search, re-pricing |
 | `Duffel.SeatMaps` | Seat maps for an offer |
 | `Duffel.Orders` | Bookings, services, metadata, re-pricing |
+| `Duffel.Orders.CreateParams` | Build an order request |
 | `Duffel.Payments` | Pay for hold orders |
 | `Duffel.OrderCancellations` | Two-step cancellation with refund preview |
 | `Duffel.OrderChangeRequests` | Request changes to an order |
