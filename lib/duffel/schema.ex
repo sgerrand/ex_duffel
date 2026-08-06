@@ -18,13 +18,22 @@ defmodule Duffel.Schema do
 
   Fields without a dedicated schema (an offer's `owner` airline, a place, a
   payment requirement) are left as raw maps. Decoding is shallow and total:
-  unknown keys are dropped, missing keys become `nil`, and missing lists
-  become `[]`.
+  unknown keys are dropped, missing keys become `nil`, missing lists become
+  `[]`, and a missing nested object stays `nil`.
 
-  Schemas cover the core booking flow: `Duffel.Schema.OfferRequest`,
-  `Duffel.Schema.Offer`, `Duffel.Schema.Order`, `Duffel.Schema.Slice`,
-  `Duffel.Schema.Segment`, `Duffel.Schema.Passenger` and
-  `Duffel.Schema.Payment`.
+  Schemas cover three areas:
+
+  * Flights: `Duffel.Schema.OfferRequest`, `Duffel.Schema.Offer`,
+    `Duffel.Schema.Order`, `Duffel.Schema.Slice`, `Duffel.Schema.Segment`,
+    `Duffel.Schema.Passenger` and `Duffel.Schema.Payment`.
+
+  * Stays: `Duffel.Schema.Stays.SearchResult`,
+    `Duffel.Schema.Stays.Accommodation`, `Duffel.Schema.Stays.Room`,
+    `Duffel.Schema.Stays.Rate`, `Duffel.Schema.Stays.Quote` and
+    `Duffel.Schema.Stays.Booking`.
+
+  * Cars: `Duffel.Schema.Cars.Search`, `Duffel.Schema.Cars.Rate`,
+    `Duffel.Schema.Cars.Quote` and `Duffel.Schema.Cars.Booking`.
 
   To decode a page of results, map over its data:
 
