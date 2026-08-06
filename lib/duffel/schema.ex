@@ -34,6 +34,16 @@ defmodule Duffel.Schema do
   """
 
   @doc """
+  Decodes a single raw map into a struct of `module`.
+
+  Returns `nil` when given `nil`, so a missing nested field stays `nil`
+  rather than becoming an empty struct.
+  """
+  @spec cast(map() | nil, module()) :: struct() | nil
+  def cast(nil, _module), do: nil
+  def cast(map, module) when is_map(map), do: module.from_map(map)
+
+  @doc """
   Decodes a list of raw maps into structs of `module`.
 
   Returns `[]` when given `nil`, so a missing list field decodes to an empty
