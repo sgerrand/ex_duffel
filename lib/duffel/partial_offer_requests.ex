@@ -44,9 +44,13 @@ defmodule Duffel.PartialOfferRequests do
   """
   @spec get(Client.t(), String.t(), keyword()) :: {:ok, map()} | {:error, term()}
   def get(client, id, opts \\ []) when is_binary(id) do
-    params = selected_partial_offer_params(Keyword.get(opts, :selected_partial_offers, []))
+    path =
+      append_selected_partial_offers(
+        "#{@path}/#{id}",
+        Keyword.get(opts, :selected_partial_offers, [])
+      )
 
-    with {:ok, %{"data" => data}} <- Client.get(client, "#{@path}/#{id}", params: params) do
+    with {:ok, %{"data" => data}} <- Client.get(client, path) do
       {:ok, data}
     end
   end
@@ -62,15 +66,20 @@ defmodule Duffel.PartialOfferRequests do
   @spec fares(Client.t(), String.t(), [String.t()]) :: {:ok, map()} | {:error, term()}
   def fares(client, id, selected_partial_offers)
       when is_binary(id) and is_list(selected_partial_offers) do
-    params = selected_partial_offer_params(selected_partial_offers)
+    path = append_selected_partial_offers("#{@path}/#{id}/fares", selected_partial_offers)
 
-    with {:ok, %{"data" => data}} <-
-           Client.get(client, "#{@path}/#{id}/fares", params: params) do
+    with {:ok, %{"data" => data}} <- Client.get(client, path) do
       {:ok, data}
     end
   end
 
-  defp selected_partial_offer_params(ids) do
-    for id <- ids, do: {"selected_partial_offer[]", id}
+  # `selected_partial_offer[]` repeats once per selected slice. Req's `:params`
+  # option keeps only the last value for a repeated key, so the query string is
+  # built into the path here instead.
+  defp append_selected_partial_offers(path, []), do: path
+
+  defp append_selected_partial_offers(path, ids) do
+    query = URI.encode_query(for id <- ids, do: {"selected_partial_offer[]", id})
+    path <> "?" <> query
   end
 end
