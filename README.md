@@ -121,6 +121,17 @@ page.data          # results
 page.after_cursor  # pass as `after:` for the next page; nil on the last page
 ```
 
+To walk the pages yourself, `Duffel.Page.has_more?/1` and
+`Duffel.Page.next_params/2` do the cursor bookkeeping — `next_params/2`
+keeps your filters and returns `nil` on the last page:
+
+```elixir
+case Duffel.Page.next_params(page, limit: 100) do
+  nil -> :done
+  params -> Duffel.Orders.list(client, params)
+end
+```
+
 Or stream every result lazily — pages are fetched as needed:
 
 ```elixir
