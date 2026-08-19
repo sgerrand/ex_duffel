@@ -320,6 +320,17 @@ defmodule Duffel.SchemaTest do
     end
   end
 
+  describe "cast/2" do
+    test "returns nil for nil" do
+      assert Schema.cast(nil, Passenger) == nil
+    end
+
+    test "decodes a map through from_map/1" do
+      assert %Passenger{id: "pas_1", type: "adult"} =
+               Schema.cast(%{"id" => "pas_1", "type" => "adult"}, Passenger)
+    end
+  end
+
   describe "cast_list/2" do
     test "returns [] for nil" do
       assert Schema.cast_list(nil, Passenger) == []

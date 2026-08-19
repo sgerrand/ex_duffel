@@ -137,10 +137,17 @@ hd(order.slices).segments
 #=> [%Duffel.Schema.Segment{...}, ...]
 ```
 
-Schemas cover the core booking flow — `Duffel.Schema.OfferRequest`,
-`Offer`, `Order`, `Slice`, `Segment`, `Passenger` and `Payment`. Decoding
-is opt-in and shallow: fields without their own schema (such as an offer's
-`owner` airline) stay raw maps. Map over a page's data to decode a list:
+Schemas cover three areas:
+
+- **Flights** — `Duffel.Schema.OfferRequest`, `Offer`, `Order`, `Slice`,
+  `Segment`, `Passenger` and `Payment`.
+- **Stays** — `Duffel.Schema.Stays.SearchResult`, `Accommodation`, `Room`,
+  `Rate`, `Quote` and `Booking`.
+- **Cars** — `Duffel.Schema.Cars.Search`, `Rate`, `Quote` and `Booking`.
+
+Decoding is opt-in and shallow: fields without their own schema (such as an
+offer's `owner` airline, or a car's `supplier`) stay raw maps. Map over a
+page's data to decode a list:
 
 ```elixir
 {:ok, page} = Duffel.Orders.list(client)

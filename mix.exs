@@ -63,6 +63,20 @@ defmodule Duffel.MixProject do
           Duffel.Schema.Passenger,
           Duffel.Schema.Payment
         ],
+        "Schemas — Stays": [
+          Duffel.Schema.Stays.SearchResult,
+          Duffel.Schema.Stays.Accommodation,
+          Duffel.Schema.Stays.Room,
+          Duffel.Schema.Stays.Rate,
+          Duffel.Schema.Stays.Quote,
+          Duffel.Schema.Stays.Booking
+        ],
+        "Schemas — Cars": [
+          Duffel.Schema.Cars.Search,
+          Duffel.Schema.Cars.Rate,
+          Duffel.Schema.Cars.Quote,
+          Duffel.Schema.Cars.Booking
+        ],
         Flights: [
           Duffel.OfferRequests,
           Duffel.OfferRequests.SearchParams,
