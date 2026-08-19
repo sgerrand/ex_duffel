@@ -32,7 +32,8 @@ defmodule Duffel.MixProject do
 
   defp deps do
     [
-      {:req, "~> 0.5"},
+      # Req is pre-1.0 and breaks between minor versions; only what CI runs.
+      {:req, "~> 0.7"},
       {:telemetry, "~> 1.0"},
       # Used by the test suite to decode request bodies. Optional rather than
       # `only: :test` because Req depends on it outside the test environment,
