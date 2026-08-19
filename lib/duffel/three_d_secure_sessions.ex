@@ -8,7 +8,7 @@ defmodule Duffel.ThreeDSecureSessions do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/three-d-secure-sessions).
   """
 
-  alias Duffel.Client
+  alias Duffel.{Client, Error}
 
   @path "/payments/three_d_secure_sessions"
 
@@ -26,7 +26,7 @@ defmodule Duffel.ThreeDSecureSessions do
       })
 
   """
-  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
     with {:ok, %{"data" => data}} <- Client.post(client, @path, params, opts) do
       {:ok, data}

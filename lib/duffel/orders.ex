@@ -5,7 +5,7 @@ defmodule Duffel.Orders do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/orders).
   """
 
-  alias Duffel.{Client, Page}
+  alias Duffel.{Client, Error, Page}
 
   @path "/air/orders"
 
@@ -48,7 +48,7 @@ defmodule Duffel.Orders do
       Duffel.Orders.create(client, params, idempotency_key: "booking-123")
 
   """
-  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
     with {:ok, %{"data" => data}} <- Client.post(client, @path, params, opts) do
       {:ok, data}
@@ -58,7 +58,7 @@ defmodule Duffel.Orders do
   @doc """
   Retrieves a single order by ID.
   """
-  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
     with {:ok, %{"data" => data}} <- Client.get(client, "#{@path}/#{id}") do
       {:ok, data}
@@ -78,7 +78,7 @@ defmodule Duffel.Orders do
       `"next_departure"`, prefix with `-` for descending
     * `:limit` / `:after` / `:before` - pagination (see `Duffel.Page`)
   """
-  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, term()}
+  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, Error.t()}
   def list(client, params \\ []) do
     Client.list(client, @path, params)
   end
@@ -102,7 +102,7 @@ defmodule Duffel.Orders do
       Duffel.Orders.update(client, "ord_123", %{metadata: %{customer_id: "123"}})
 
   """
-  @spec update(Client.t(), String.t(), map()) :: {:ok, map()} | {:error, term()}
+  @spec update(Client.t(), String.t(), map()) :: {:ok, map()} | {:error, Error.t()}
   def update(client, id, params) when is_binary(id) do
     with {:ok, %{"data" => data}} <- Client.patch(client, "#{@path}/#{id}", params) do
       {:ok, data}
@@ -113,7 +113,7 @@ defmodule Duffel.Orders do
   Re-prices an unpaid (hold) order with the airline and returns the
   updated order.
   """
-  @spec price(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  @spec price(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def price(client, id) when is_binary(id) do
     with {:ok, %{"data" => data}} <-
            Client.post(client, "#{@path}/#{id}/actions/price", %{}) do
@@ -124,7 +124,7 @@ defmodule Duffel.Orders do
   @doc """
   Lists the services (e.g. extra bags, seats) available to add to an order.
   """
-  @spec available_services(Client.t(), String.t()) :: {:ok, [map()]} | {:error, term()}
+  @spec available_services(Client.t(), String.t()) :: {:ok, [map()]} | {:error, Error.t()}
   def available_services(client, id) when is_binary(id) do
     with {:ok, %{"data" => data}} <-
            Client.get(client, "#{@path}/#{id}/available_services") do
@@ -144,7 +144,7 @@ defmodule Duffel.Orders do
 
   """
   @spec add_services(Client.t(), String.t(), map(), keyword()) ::
-          {:ok, map()} | {:error, term()}
+          {:ok, map()} | {:error, Error.t()}
   def add_services(client, id, params, opts \\ []) when is_binary(id) do
     with {:ok, %{"data" => data}} <-
            Client.post(client, "#{@path}/#{id}/services", params, opts) do

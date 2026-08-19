@@ -5,7 +5,7 @@ defmodule Duffel.Stays.Bookings do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/stays-bookings).
   """
 
-  alias Duffel.{Client, Page}
+  alias Duffel.{Client, Error, Page}
 
   @path "/stays/bookings"
 
@@ -31,7 +31,7 @@ defmodule Duffel.Stays.Bookings do
       )
 
   """
-  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
     with {:ok, %{"data" => data}} <- Client.post(client, @path, params, opts) do
       {:ok, data}
@@ -41,7 +41,7 @@ defmodule Duffel.Stays.Bookings do
   @doc """
   Retrieves a single booking by ID.
   """
-  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
     with {:ok, %{"data" => data}} <- Client.get(client, "#{@path}/#{id}") do
       {:ok, data}
@@ -56,7 +56,7 @@ defmodule Duffel.Stays.Bookings do
     * `:limit` / `:after` / `:before` - pagination (see `Duffel.Page`)
 
   """
-  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, term()}
+  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, Error.t()}
   def list(client, params \\ []) do
     Client.list(client, @path, params)
   end
@@ -79,7 +79,7 @@ defmodule Duffel.Stays.Bookings do
       Duffel.Stays.Bookings.update(client, "bok_123", %{metadata: %{ref: "abc"}})
 
   """
-  @spec update(Client.t(), String.t(), map()) :: {:ok, map()} | {:error, term()}
+  @spec update(Client.t(), String.t(), map()) :: {:ok, map()} | {:error, Error.t()}
   def update(client, id, params) when is_binary(id) do
     with {:ok, %{"data" => data}} <- Client.patch(client, "#{@path}/#{id}", params) do
       {:ok, data}
@@ -89,7 +89,7 @@ defmodule Duffel.Stays.Bookings do
   @doc """
   Cancels a booking.
   """
-  @spec cancel(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  @spec cancel(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def cancel(client, id) when is_binary(id) do
     with {:ok, %{"data" => data}} <-
            Client.post(client, "#{@path}/#{id}/actions/cancel", %{}) do
@@ -109,7 +109,7 @@ defmodule Duffel.Stays.Bookings do
 
   """
   @spec create_payment_instruction(Client.t(), String.t(), map()) ::
-          {:ok, map()} | {:error, term()}
+          {:ok, map()} | {:error, Error.t()}
   def create_payment_instruction(client, id, params) when is_binary(id) do
     with {:ok, %{"data" => data}} <-
            Client.post(client, "#{@path}/#{id}/payment_instructions", params) do

@@ -7,6 +7,13 @@ defmodule Duffel.Client do
   (e.g. `Duffel.OfferRequests`) build on top of this module; most
   applications won't need to call it directly.
 
+  ## Errors
+
+  A failed request always comes back as `{:error, %Duffel.Error{}}`. That
+  covers requests the API rejected and requests that never reached it: a
+  connection or timeout failure becomes an error with `type:
+  :transport_error` and the original exception under `:reason`.
+
   ## Retries and idempotency
 
   Requests that fail with a 408, 429 or 5xx status, or with a network
@@ -66,7 +73,7 @@ defmodule Duffel.Client do
           req_options: keyword()
         }
 
-  @type response :: {:ok, map()} | {:error, Error.t() | Exception.t()}
+  @type response :: {:ok, map()} | {:error, Error.t()}
 
   @doc """
   Builds a client struct.
@@ -171,7 +178,7 @@ defmodule Duffel.Client do
   Performs a `GET` request against a list endpoint and wraps the result
   in a `Duffel.Page`.
   """
-  @spec list(t(), String.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, term()}
+  @spec list(t(), String.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, Error.t()}
   def list(%__MODULE__{} = client, path, params \\ []) do
     with {:ok, body} <- get(client, path, params: Map.new(params)) do
       {:ok, Page.from_body(body)}
@@ -204,9 +211,6 @@ defmodule Duffel.Client do
 
             {:error, %Error{} = error} ->
               raise error
-
-            {:error, exception} when is_exception(exception) ->
-              raise exception
           end
       end,
       fn _ -> :ok end
@@ -271,6 +275,6 @@ defmodule Duffel.Client do
   end
 
   defp handle_response({:error, exception}) do
-    {:error, exception}
+    {:error, Error.from_exception(exception)}
   end
 end

@@ -7,7 +7,7 @@ defmodule Duffel.SeatMaps do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/seat-maps).
   """
 
-  alias Duffel.Client
+  alias Duffel.{Client, Error}
 
   @path "/air/seat_maps"
 
@@ -23,7 +23,7 @@ defmodule Duffel.SeatMaps do
       Duffel.SeatMaps.list(client, offer_id: "off_123")
 
   """
-  @spec list(Client.t(), keyword() | map()) :: {:ok, [map()]} | {:error, term()}
+  @spec list(Client.t(), keyword() | map()) :: {:ok, [map()]} | {:error, Error.t()}
   def list(client, params) do
     with {:ok, %{"data" => data}} <- Client.get(client, @path, params: Map.new(params)) do
       {:ok, data}

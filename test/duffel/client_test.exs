@@ -189,13 +189,16 @@ defmodule Duffel.ClientTest do
       assert {:error, %Error{status: 502, errors: []}} = Client.get(client(), "/air/offers")
     end
 
-    test "returns transport errors as exceptions" do
+    test "normalises transport errors into Duffel.Error" do
       stub(fn conn ->
         Req.Test.transport_error(conn, :econnrefused)
       end)
 
-      assert {:error, %Req.TransportError{reason: :econnrefused}} =
-               Client.get(client(), "/air/offers")
+      assert {:error, %Error{} = error} = Client.get(client(), "/air/offers")
+      assert error.type == :transport_error
+      assert error.status == nil
+      assert error.reason == %Req.TransportError{reason: :econnrefused}
+      assert Exception.message(error) == "Duffel request failed: connection refused"
     end
 
     test "exception/1 builds an error struct" do
@@ -327,7 +330,7 @@ defmodule Duffel.ClientTest do
         Req.Test.transport_error(conn, :timeout)
       end)
 
-      assert_raise Req.TransportError, fn ->
+      assert_raise Error, ~r/^Duffel request failed: timeout$/, fn ->
         client() |> Client.stream("/air/offer_requests") |> Enum.to_list()
       end
     end

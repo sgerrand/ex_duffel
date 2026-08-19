@@ -5,14 +5,14 @@ defmodule Duffel.Stays.NegotiatedRates do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/stays-negotiated-rates).
   """
 
-  alias Duffel.{Client, Page}
+  alias Duffel.{Client, Error, Page}
 
   @path "/stays/negotiated_rates"
 
   @doc """
   Creates a negotiated rate.
   """
-  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
     with {:ok, %{"data" => data}} <- Client.post(client, @path, params, opts) do
       {:ok, data}
@@ -22,7 +22,7 @@ defmodule Duffel.Stays.NegotiatedRates do
   @doc """
   Retrieves a single negotiated rate by ID.
   """
-  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
     with {:ok, %{"data" => data}} <- Client.get(client, "#{@path}/#{id}") do
       {:ok, data}
@@ -37,7 +37,7 @@ defmodule Duffel.Stays.NegotiatedRates do
     * `:limit` / `:after` / `:before` - pagination (see `Duffel.Page`)
 
   """
-  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, term()}
+  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, Error.t()}
   def list(client, params \\ []) do
     Client.list(client, @path, params)
   end
@@ -55,7 +55,7 @@ defmodule Duffel.Stays.NegotiatedRates do
   @doc """
   Updates a negotiated rate.
   """
-  @spec update(Client.t(), String.t(), map()) :: {:ok, map()} | {:error, term()}
+  @spec update(Client.t(), String.t(), map()) :: {:ok, map()} | {:error, Error.t()}
   def update(client, id, params) when is_binary(id) do
     with {:ok, %{"data" => data}} <- Client.patch(client, "#{@path}/#{id}", params) do
       {:ok, data}
@@ -65,7 +65,7 @@ defmodule Duffel.Stays.NegotiatedRates do
   @doc """
   Deletes a negotiated rate.
   """
-  @spec delete(Client.t(), String.t()) :: :ok | {:error, term()}
+  @spec delete(Client.t(), String.t()) :: :ok | {:error, Error.t()}
   def delete(client, id) when is_binary(id) do
     with {:ok, _body} <- Client.delete(client, "#{@path}/#{id}") do
       :ok

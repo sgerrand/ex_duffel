@@ -19,7 +19,7 @@ defmodule Duffel.Webhooks do
 
   import Bitwise
 
-  alias Duffel.{Client, Page}
+  alias Duffel.{Client, Error, Page}
 
   @path "/air/webhooks"
 
@@ -39,7 +39,7 @@ defmodule Duffel.Webhooks do
       })
 
   """
-  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
     with {:ok, %{"data" => data}} <- Client.post(client, @path, params, opts) do
       {:ok, data}
@@ -54,7 +54,7 @@ defmodule Duffel.Webhooks do
     * `:limit` / `:after` / `:before` - pagination (see `Duffel.Page`)
 
   """
-  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, term()}
+  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, Error.t()}
   def list(client, params \\ []) do
     Client.list(client, @path, params)
   end
@@ -77,7 +77,7 @@ defmodule Duffel.Webhooks do
       Duffel.Webhooks.update(client, "sev_123", %{active: false})
 
   """
-  @spec update(Client.t(), String.t(), map()) :: {:ok, map()} | {:error, term()}
+  @spec update(Client.t(), String.t(), map()) :: {:ok, map()} | {:error, Error.t()}
   def update(client, id, params) when is_binary(id) do
     with {:ok, %{"data" => data}} <- Client.patch(client, "#{@path}/#{id}", params) do
       {:ok, data}
@@ -87,7 +87,7 @@ defmodule Duffel.Webhooks do
   @doc """
   Deletes a webhook subscription.
   """
-  @spec delete(Client.t(), String.t()) :: :ok | {:error, term()}
+  @spec delete(Client.t(), String.t()) :: :ok | {:error, Error.t()}
   def delete(client, id) when is_binary(id) do
     with {:ok, _body} <- Client.delete(client, "#{@path}/#{id}") do
       :ok
@@ -97,7 +97,7 @@ defmodule Duffel.Webhooks do
   @doc """
   Sends a test (ping) event to the webhook's URL.
   """
-  @spec ping(Client.t(), String.t()) :: :ok | {:error, term()}
+  @spec ping(Client.t(), String.t()) :: :ok | {:error, Error.t()}
   def ping(client, id) when is_binary(id) do
     with {:ok, _body} <- Client.post(client, "#{@path}/#{id}/actions/ping", %{}) do
       :ok

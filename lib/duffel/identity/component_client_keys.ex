@@ -9,7 +9,7 @@ defmodule Duffel.Identity.ComponentClientKeys do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/component-client-keys).
   """
 
-  alias Duffel.Client
+  alias Duffel.{Client, Error}
 
   @path "/identity/component_client_keys"
 
@@ -25,7 +25,7 @@ defmodule Duffel.Identity.ComponentClientKeys do
       Duffel.Identity.ComponentClientKeys.create(client, %{order_id: "ord_123"})
 
   """
-  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params \\ %{}, opts \\ []) do
     with {:ok, %{"data" => data}} <- Client.post(client, @path, params, opts) do
       {:ok, data}

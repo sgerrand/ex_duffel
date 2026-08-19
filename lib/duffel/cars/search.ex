@@ -8,7 +8,7 @@ defmodule Duffel.Cars.Search do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/cars-search).
   """
 
-  alias Duffel.Client
+  alias Duffel.{Client, Error}
 
   @doc """
   Searches for rental cars.
@@ -31,7 +31,7 @@ defmodule Duffel.Cars.Search do
       Duffel.Cars.Search.create(client, params)
 
   """
-  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
     with {:ok, %{"data" => data}} <- Client.post(client, "/cars/search", params, opts) do
       {:ok, data}

@@ -6,7 +6,7 @@ defmodule Duffel.AirlineInitiatedChanges do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/airline-initiated-changes).
   """
 
-  alias Duffel.{Client, Page}
+  alias Duffel.{Client, Error, Page}
 
   @path "/air/airline_initiated_changes"
 
@@ -19,7 +19,7 @@ defmodule Duffel.AirlineInitiatedChanges do
     * `:limit` / `:after` / `:before` - pagination (see `Duffel.Page`)
 
   """
-  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, term()}
+  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, Error.t()}
   def list(client, params \\ []) do
     Client.list(client, @path, params)
   end
@@ -38,7 +38,7 @@ defmodule Duffel.AirlineInitiatedChanges do
   @doc """
   Accepts an airline-initiated change.
   """
-  @spec accept(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  @spec accept(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def accept(client, id) when is_binary(id) do
     with {:ok, %{"data" => data}} <-
            Client.post(client, "#{@path}/#{id}/actions/accept", %{}) do
@@ -55,7 +55,7 @@ defmodule Duffel.AirlineInitiatedChanges do
       Duffel.AirlineInitiatedChanges.update(client, "aic_123", %{action_taken: "accepted"})
 
   """
-  @spec update(Client.t(), String.t(), map()) :: {:ok, map()} | {:error, term()}
+  @spec update(Client.t(), String.t(), map()) :: {:ok, map()} | {:error, Error.t()}
   def update(client, id, params) when is_binary(id) do
     with {:ok, %{"data" => data}} <- Client.patch(client, "#{@path}/#{id}", params) do
       {:ok, data}

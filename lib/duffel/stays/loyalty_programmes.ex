@@ -5,14 +5,14 @@ defmodule Duffel.Stays.LoyaltyProgrammes do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/stays-loyalty-programmes).
   """
 
-  alias Duffel.Client
+  alias Duffel.{Client, Error}
 
   @path "/stays/loyalty_programmes"
 
   @doc """
   Lists accommodation loyalty programmes. Not paginated.
   """
-  @spec list(Client.t()) :: {:ok, [map()]} | {:error, term()}
+  @spec list(Client.t()) :: {:ok, [map()]} | {:error, Error.t()}
   def list(client) do
     with {:ok, %{"data" => data}} <- Client.get(client, @path) do
       {:ok, data}

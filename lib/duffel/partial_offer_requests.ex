@@ -8,7 +8,7 @@ defmodule Duffel.PartialOfferRequests do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/partial-offer-requests).
   """
 
-  alias Duffel.Client
+  alias Duffel.{Client, Error}
 
   @path "/air/partial_offer_requests"
 
@@ -22,7 +22,7 @@ defmodule Duffel.PartialOfferRequests do
     * `:params` - query string parameters, e.g. `params: [supplier_timeout: 10_000]`
 
   """
-  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
     with {:ok, %{"data" => data}} <- Client.post(client, @path, params, opts) do
       {:ok, data}
@@ -42,7 +42,7 @@ defmodule Duffel.PartialOfferRequests do
       )
 
   """
-  @spec get(Client.t(), String.t(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec get(Client.t(), String.t(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id, opts \\ []) when is_binary(id) do
     path =
       append_selected_partial_offers(
@@ -63,7 +63,7 @@ defmodule Duffel.PartialOfferRequests do
       Duffel.PartialOfferRequests.fares(client, "prq_123", ["off_1", "off_2"])
 
   """
-  @spec fares(Client.t(), String.t(), [String.t()]) :: {:ok, map()} | {:error, term()}
+  @spec fares(Client.t(), String.t(), [String.t()]) :: {:ok, map()} | {:error, Error.t()}
   def fares(client, id, selected_partial_offers)
       when is_binary(id) and is_list(selected_partial_offers) do
     path = append_selected_partial_offers("#{@path}/#{id}/fares", selected_partial_offers)

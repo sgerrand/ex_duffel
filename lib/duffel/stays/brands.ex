@@ -5,14 +5,14 @@ defmodule Duffel.Stays.Brands do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/stays-brands).
   """
 
-  alias Duffel.Client
+  alias Duffel.{Client, Error}
 
   @path "/stays/brands"
 
   @doc """
   Lists accommodation brands. Not paginated.
   """
-  @spec list(Client.t()) :: {:ok, [map()]} | {:error, term()}
+  @spec list(Client.t()) :: {:ok, [map()]} | {:error, Error.t()}
   def list(client) do
     with {:ok, %{"data" => data}} <- Client.get(client, @path) do
       {:ok, data}
@@ -22,7 +22,7 @@ defmodule Duffel.Stays.Brands do
   @doc """
   Retrieves a single brand by ID.
   """
-  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
     with {:ok, %{"data" => data}} <- Client.get(client, "#{@path}/#{id}") do
       {:ok, data}

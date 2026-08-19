@@ -5,7 +5,7 @@ defmodule Duffel.Airports do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/airports).
   """
 
-  alias Duffel.{Client, Page}
+  alias Duffel.{Client, Error, Page}
 
   @path "/air/airports"
 
@@ -19,7 +19,7 @@ defmodule Duffel.Airports do
     * `:limit` / `:after` / `:before` - pagination (see `Duffel.Page`)
 
   """
-  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, term()}
+  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, Error.t()}
   def list(client, params \\ []) do
     Client.list(client, @path, params)
   end
@@ -38,7 +38,7 @@ defmodule Duffel.Airports do
   @doc """
   Retrieves a single airport by ID.
   """
-  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
     with {:ok, %{"data" => data}} <- Client.get(client, "#{@path}/#{id}") do
       {:ok, data}

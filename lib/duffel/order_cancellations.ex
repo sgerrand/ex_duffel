@@ -8,7 +8,7 @@ defmodule Duffel.OrderCancellations do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/order-cancellations).
   """
 
-  alias Duffel.{Client, Page}
+  alias Duffel.{Client, Error, Page}
 
   @path "/air/order_cancellations"
 
@@ -20,7 +20,7 @@ defmodule Duffel.OrderCancellations do
       Duffel.OrderCancellations.create(client, %{order_id: "ord_123"})
 
   """
-  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
     with {:ok, %{"data" => data}} <- Client.post(client, @path, params, opts) do
       {:ok, data}
@@ -31,7 +31,7 @@ defmodule Duffel.OrderCancellations do
   Confirms a pending order cancellation. This actually cancels the order
   and cannot be undone.
   """
-  @spec confirm(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  @spec confirm(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def confirm(client, id) when is_binary(id) do
     with {:ok, %{"data" => data}} <-
            Client.post(client, "#{@path}/#{id}/actions/confirm", %{}) do
@@ -42,7 +42,7 @@ defmodule Duffel.OrderCancellations do
   @doc """
   Retrieves a single order cancellation by ID.
   """
-  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
     with {:ok, %{"data" => data}} <- Client.get(client, "#{@path}/#{id}") do
       {:ok, data}
@@ -58,7 +58,7 @@ defmodule Duffel.OrderCancellations do
     * `:limit` / `:after` / `:before` - pagination (see `Duffel.Page`)
 
   """
-  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, term()}
+  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, Error.t()}
   def list(client, params \\ []) do
     Client.list(client, @path, params)
   end

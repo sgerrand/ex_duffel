@@ -5,7 +5,7 @@ defmodule Duffel.Identity.CustomerUserGroups do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/customer-user-groups).
   """
 
-  alias Duffel.Client
+  alias Duffel.{Client, Error}
 
   @path "/identity/customer/user_groups"
 
@@ -20,7 +20,7 @@ defmodule Duffel.Identity.CustomerUserGroups do
       })
 
   """
-  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
     with {:ok, %{"data" => data}} <- Client.post(client, @path, params, opts) do
       {:ok, data}
@@ -30,7 +30,7 @@ defmodule Duffel.Identity.CustomerUserGroups do
   @doc """
   Retrieves a single group by ID.
   """
-  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
     with {:ok, %{"data" => data}} <- Client.get(client, "#{@path}/#{id}") do
       {:ok, data}
@@ -40,7 +40,7 @@ defmodule Duffel.Identity.CustomerUserGroups do
   @doc """
   Lists customer user groups. Not paginated.
   """
-  @spec list(Client.t()) :: {:ok, [map()]} | {:error, term()}
+  @spec list(Client.t()) :: {:ok, [map()]} | {:error, Error.t()}
   def list(client) do
     with {:ok, %{"data" => data}} <- Client.get(client, @path) do
       {:ok, data}
@@ -50,7 +50,7 @@ defmodule Duffel.Identity.CustomerUserGroups do
   @doc """
   Updates a customer user group's name or members.
   """
-  @spec update(Client.t(), String.t(), map()) :: {:ok, map()} | {:error, term()}
+  @spec update(Client.t(), String.t(), map()) :: {:ok, map()} | {:error, Error.t()}
   def update(client, id, params) when is_binary(id) do
     with {:ok, %{"data" => data}} <- Client.patch(client, "#{@path}/#{id}", params) do
       {:ok, data}
@@ -60,7 +60,7 @@ defmodule Duffel.Identity.CustomerUserGroups do
   @doc """
   Deletes a customer user group.
   """
-  @spec delete(Client.t(), String.t()) :: :ok | {:error, term()}
+  @spec delete(Client.t(), String.t()) :: :ok | {:error, Error.t()}
   def delete(client, id) when is_binary(id) do
     with {:ok, _body} <- Client.delete(client, "#{@path}/#{id}") do
       :ok

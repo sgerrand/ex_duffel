@@ -5,7 +5,7 @@ defmodule Duffel.Places do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/places).
   """
 
-  alias Duffel.Client
+  alias Duffel.{Client, Error}
 
   @path "/places/suggestions"
 
@@ -23,7 +23,7 @@ defmodule Duffel.Places do
       Duffel.Places.suggestions(client, query: "lond")
 
   """
-  @spec suggestions(Client.t(), keyword() | map()) :: {:ok, [map()]} | {:error, term()}
+  @spec suggestions(Client.t(), keyword() | map()) :: {:ok, [map()]} | {:error, Error.t()}
   def suggestions(client, params) do
     with {:ok, %{"data" => data}} <- Client.get(client, @path, params: Map.new(params)) do
       {:ok, data}

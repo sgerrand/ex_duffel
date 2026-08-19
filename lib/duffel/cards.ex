@@ -12,7 +12,7 @@ defmodule Duffel.Cards do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/cards).
   """
 
-  alias Duffel.Client
+  alias Duffel.{Client, Error}
 
   @path "/payments/cards"
 
@@ -37,7 +37,7 @@ defmodule Duffel.Cards do
       })
 
   """
-  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
     opts = Keyword.put_new(opts, :base_url, client.cards_base_url)
 
@@ -49,7 +49,7 @@ defmodule Duffel.Cards do
   @doc """
   Deletes a card token.
   """
-  @spec delete(Client.t(), String.t()) :: :ok | {:error, term()}
+  @spec delete(Client.t(), String.t()) :: :ok | {:error, Error.t()}
   def delete(client, id) when is_binary(id) do
     with {:ok, _body} <-
            Client.delete(client, "#{@path}/#{id}", base_url: client.cards_base_url) do

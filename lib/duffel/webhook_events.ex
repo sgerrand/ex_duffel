@@ -5,7 +5,7 @@ defmodule Duffel.WebhookEvents do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/webhook-events).
   """
 
-  alias Duffel.{Client, Page}
+  alias Duffel.{Client, Error, Page}
 
   @path "/air/webhooks/events"
 
@@ -17,7 +17,7 @@ defmodule Duffel.WebhookEvents do
     * `:limit` / `:after` / `:before` - pagination (see `Duffel.Page`)
 
   """
-  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, term()}
+  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, Error.t()}
   def list(client, params \\ []) do
     Client.list(client, @path, params)
   end
@@ -35,7 +35,7 @@ defmodule Duffel.WebhookEvents do
   @doc """
   Retrieves a single webhook event by ID.
   """
-  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
     with {:ok, %{"data" => data}} <- Client.get(client, "#{@path}/#{id}") do
       {:ok, data}
@@ -45,7 +45,7 @@ defmodule Duffel.WebhookEvents do
   @doc """
   Queues a webhook event for redelivery.
   """
-  @spec redeliver(Client.t(), String.t()) :: :ok | {:error, term()}
+  @spec redeliver(Client.t(), String.t()) :: :ok | {:error, Error.t()}
   def redeliver(client, id) when is_binary(id) do
     with {:ok, _body} <- Client.post(client, "#{@path}/#{id}/actions/redeliver", %{}) do
       :ok

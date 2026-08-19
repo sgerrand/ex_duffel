@@ -5,14 +5,14 @@ defmodule Duffel.Stays.Chains do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/stays-chains).
   """
 
-  alias Duffel.Client
+  alias Duffel.{Client, Error}
 
   @path "/stays/chains"
 
   @doc """
   Lists accommodation chains. Not paginated.
   """
-  @spec list(Client.t()) :: {:ok, [map()]} | {:error, term()}
+  @spec list(Client.t()) :: {:ok, [map()]} | {:error, Error.t()}
   def list(client) do
     with {:ok, %{"data" => data}} <- Client.get(client, @path) do
       {:ok, data}
@@ -22,7 +22,7 @@ defmodule Duffel.Stays.Chains do
   @doc """
   Retrieves a single chain by ID.
   """
-  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
     with {:ok, %{"data" => data}} <- Client.get(client, "#{@path}/#{id}") do
       {:ok, data}

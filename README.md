@@ -158,7 +158,9 @@ orders = Enum.map(page.data, &Duffel.Schema.Order.from_map/1)
 
 ## Error handling
 
-Errors mirror the [Duffel error schema](https://duffel.com/docs/api/overview/errors),
+Every failure comes back as a `Duffel.Error`, so one clause covers both a
+rejected request and a request that never reached Duffel. Errors from the
+API mirror the [Duffel error schema](https://duffel.com/docs/api/overview/errors),
 with `type` as an atom for pattern matching:
 
 ```elixir
@@ -172,14 +174,22 @@ case Duffel.Orders.create(client, params) do
   {:error, %Duffel.Error{type: :validation_error, source: source, message: message}} ->
     show_field_error(source, message)
 
+  {:error, %Duffel.Error{type: :transport_error, reason: reason}} ->
+    # the request failed to complete: connection refused, DNS, timeout
+    retry_later(reason)
+
   {:error, %Duffel.Error{request_id: request_id}} ->
     # quote request_id when contacting Duffel support
     log_and_fail(request_id)
 end
 ```
 
+A transport error has `status: nil` and keeps the underlying exception,
+usually a `Req.TransportError`, under `reason`.
+
 Rate-limited (429) and transient server errors are retried automatically
-with backoff.
+with backoff. Every `POST` carries an `Idempotency-Key`, so a retried
+booking cannot be created twice.
 
 ## Telemetry
 

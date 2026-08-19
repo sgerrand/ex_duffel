@@ -1,19 +1,33 @@
 defmodule Duffel.Error do
   @moduledoc """
-  Represents an error response from the Duffel API.
+  The error every Duffel function returns when something goes wrong.
 
-  Mirrors the [Duffel error schema](https://duffel.com/docs/api/overview/errors).
-  The struct fields are populated from the first error in the response;
-  the full list is available under `:errors`.
-
-  `:type` is converted to an atom for pattern matching, e.g.:
+  A failed call always gives you `{:error, %Duffel.Error{}}`, whether the
+  API rejected the request or the request never reached it, so one clause
+  covers both:
 
       case Duffel.Orders.create(client, params) do
         {:ok, order} -> ...
         {:error, %Duffel.Error{type: :rate_limit_error}} -> retry_later()
         {:error, %Duffel.Error{type: :validation_error, source: source}} -> ...
+        {:error, %Duffel.Error{type: :transport_error}} -> retry_later()
       end
 
+  ## API errors
+
+  These mirror the [Duffel error schema](https://duffel.com/docs/api/overview/errors).
+  The struct fields come from the first error in the response; the full
+  list is under `:errors`, and `:status` holds the HTTP status. `:type` is
+  one of `:airline_error`, `:api_error`, `:authentication_error`,
+  `:invalid_request_error`, `:invalid_state_error`, `:rate_limit_error` or
+  `:validation_error`. A type Duffel adds later reads as `:unknown_error`.
+
+  ## Transport errors
+
+  When the request could not be completed at all — connection refused, DNS
+  failure, timeout — `:type` is `:transport_error` and `:status` is `nil`.
+  The underlying exception, usually a `Req.TransportError`, is kept under
+  `:reason` for when you need to tell those cases apart.
   """
 
   @known_types ~w(
@@ -35,6 +49,7 @@ defmodule Duffel.Error do
     :source,
     :request_id,
     :status,
+    :reason,
     errors: []
   ]
 
@@ -47,13 +62,18 @@ defmodule Duffel.Error do
           source: map() | nil,
           request_id: String.t() | nil,
           status: pos_integer() | nil,
+          reason: Exception.t() | nil,
           errors: [map()]
         }
 
   @impl true
+  def message(%__MODULE__{status: nil} = error) do
+    "Duffel request failed: #{error.message || error.title || "unknown error"}"
+  end
+
   def message(%__MODULE__{} = error) do
     detail = error.message || error.title || "unknown error"
-    "Duffel API error (HTTP #{error.status || "?"}): #{detail}"
+    "Duffel API error (HTTP #{error.status}): #{detail}"
   end
 
   @doc false
@@ -80,6 +100,17 @@ defmodule Duffel.Error do
       request_id: request_id,
       status: status,
       errors: errors
+    }
+  end
+
+  @doc false
+  @spec from_exception(Exception.t()) :: t()
+  def from_exception(exception) do
+    %__MODULE__{
+      type: :transport_error,
+      title: "Transport error",
+      message: Exception.message(exception),
+      reason: exception
     }
   end
 

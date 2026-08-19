@@ -8,7 +8,7 @@ defmodule Duffel.Stays.Search do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/stays-search).
   """
 
-  alias Duffel.Client
+  alias Duffel.{Client, Error}
 
   @doc """
   Searches for accommodation.
@@ -30,7 +30,7 @@ defmodule Duffel.Stays.Search do
       Duffel.Stays.Search.create(client, params)
 
   """
-  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
     with {:ok, %{"data" => data}} <- Client.post(client, "/stays/search", params, opts) do
       {:ok, data}
@@ -40,7 +40,7 @@ defmodule Duffel.Stays.Search do
   @doc """
   Fetches every room and rate for a search result.
   """
-  @spec fetch_all_rates(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  @spec fetch_all_rates(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def fetch_all_rates(client, search_result_id) when is_binary(search_result_id) do
     path = "/stays/search_results/#{search_result_id}/actions/fetch_all_rates"
 

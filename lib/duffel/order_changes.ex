@@ -7,7 +7,7 @@ defmodule Duffel.OrderChanges do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/order-changes).
   """
 
-  alias Duffel.Client
+  alias Duffel.{Client, Error}
 
   @path "/air/order_changes"
 
@@ -19,7 +19,7 @@ defmodule Duffel.OrderChanges do
       Duffel.OrderChanges.create(client, %{selected_order_change_offer: "oco_123"})
 
   """
-  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
     with {:ok, %{"data" => data}} <- Client.post(client, @path, params, opts) do
       {:ok, data}
@@ -41,7 +41,7 @@ defmodule Duffel.OrderChanges do
       })
 
   """
-  @spec confirm(Client.t(), String.t(), map(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec confirm(Client.t(), String.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def confirm(client, id, params \\ %{}, opts \\ []) when is_binary(id) do
     with {:ok, %{"data" => data}} <-
            Client.post(client, "#{@path}/#{id}/actions/confirm", params, opts) do
@@ -52,7 +52,7 @@ defmodule Duffel.OrderChanges do
   @doc """
   Retrieves a single order change by ID.
   """
-  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
     with {:ok, %{"data" => data}} <- Client.get(client, "#{@path}/#{id}") do
       {:ok, data}

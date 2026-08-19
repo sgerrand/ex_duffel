@@ -8,7 +8,7 @@ defmodule Duffel.Offers do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/offers).
   """
 
-  alias Duffel.{Client, Page}
+  alias Duffel.{Client, Error, Page}
 
   @path "/air/offers"
 
@@ -28,7 +28,7 @@ defmodule Duffel.Offers do
       Duffel.Offers.list(client, offer_request_id: "orq_123", sort: "total_amount")
 
   """
-  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, term()}
+  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, Error.t()}
   def list(client, params) do
     Client.list(client, @path, params)
   end
@@ -53,7 +53,7 @@ defmodule Duffel.Offers do
       `params: [return_available_services: true]`
 
   """
-  @spec get(Client.t(), String.t(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec get(Client.t(), String.t(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id, opts \\ []) when is_binary(id) do
     with {:ok, %{"data" => data}} <- Client.get(client, "#{@path}/#{id}", opts) do
       {:ok, data}
@@ -63,7 +63,7 @@ defmodule Duffel.Offers do
   @doc """
   Re-prices the offer with the airline and returns the updated offer.
   """
-  @spec price(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  @spec price(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def price(client, id) when is_binary(id) do
     with {:ok, %{"data" => data}} <-
            Client.post(client, "#{@path}/#{id}/actions/price", %{}) do
@@ -86,7 +86,7 @@ defmodule Duffel.Offers do
 
   """
   @spec update_passenger(Client.t(), String.t(), String.t(), map()) ::
-          {:ok, map()} | {:error, term()}
+          {:ok, map()} | {:error, Error.t()}
   def update_passenger(client, offer_id, passenger_id, params)
       when is_binary(offer_id) and is_binary(passenger_id) do
     with {:ok, %{"data" => data}} <-

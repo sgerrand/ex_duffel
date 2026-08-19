@@ -5,7 +5,7 @@ defmodule Duffel.Cars.Bookings do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/cars-bookings).
   """
 
-  alias Duffel.Client
+  alias Duffel.{Client, Error}
 
   @path "/cars/bookings"
 
@@ -31,7 +31,7 @@ defmodule Duffel.Cars.Bookings do
       )
 
   """
-  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
     with {:ok, %{"data" => data}} <- Client.post(client, @path, params, opts) do
       {:ok, data}
@@ -41,7 +41,7 @@ defmodule Duffel.Cars.Bookings do
   @doc """
   Retrieves a single booking by ID.
   """
-  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
     with {:ok, %{"data" => data}} <- Client.get(client, "#{@path}/#{id}") do
       {:ok, data}
@@ -51,7 +51,7 @@ defmodule Duffel.Cars.Bookings do
   @doc """
   Cancels a booking.
   """
-  @spec cancel(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  @spec cancel(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def cancel(client, id) when is_binary(id) do
     with {:ok, %{"data" => data}} <-
            Client.post(client, "#{@path}/#{id}/actions/cancel", %{}) do

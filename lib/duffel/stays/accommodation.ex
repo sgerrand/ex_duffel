@@ -6,7 +6,7 @@ defmodule Duffel.Stays.Accommodation do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/stays-accommodation).
   """
 
-  alias Duffel.{Client, Page}
+  alias Duffel.{Client, Error, Page}
 
   @path "/stays/accommodation"
 
@@ -18,7 +18,7 @@ defmodule Duffel.Stays.Accommodation do
     * `:limit` / `:after` / `:before` - pagination (see `Duffel.Page`)
 
   """
-  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, term()}
+  @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, Error.t()}
   def list(client, params \\ []) do
     Client.list(client, @path, params)
   end
@@ -36,7 +36,7 @@ defmodule Duffel.Stays.Accommodation do
   @doc """
   Retrieves a single accommodation by ID.
   """
-  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, term()}
+  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
     with {:ok, %{"data" => data}} <- Client.get(client, "#{@path}/#{id}") do
       {:ok, data}
@@ -58,7 +58,7 @@ defmodule Duffel.Stays.Accommodation do
       })
 
   """
-  @spec suggestions(Client.t(), map()) :: {:ok, [map()]} | {:error, term()}
+  @spec suggestions(Client.t(), map()) :: {:ok, [map()]} | {:error, Error.t()}
   def suggestions(client, params) do
     with {:ok, %{"data" => data}} <-
            Client.post(client, "#{@path}/suggestions", params) do
@@ -73,7 +73,7 @@ defmodule Duffel.Stays.Accommodation do
   `:before` pagination parameters.
   """
   @spec reviews(Client.t(), String.t(), keyword() | map()) ::
-          {:ok, map()} | {:error, term()}
+          {:ok, map()} | {:error, Error.t()}
   def reviews(client, id, params \\ []) when is_binary(id) do
     with {:ok, %{"data" => data}} <-
            Client.get(client, "#{@path}/#{id}/reviews", params: Map.new(params)) do

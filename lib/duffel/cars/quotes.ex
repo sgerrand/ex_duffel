@@ -7,7 +7,7 @@ defmodule Duffel.Cars.Quotes do
   See the [Duffel documentation](https://duffel.com/docs/api/v2/cars-quotes).
   """
 
-  alias Duffel.Client
+  alias Duffel.{Client, Error}
 
   @doc """
   Creates a quote for a rate.
@@ -17,7 +17,7 @@ defmodule Duffel.Cars.Quotes do
       Duffel.Cars.Quotes.create(client, %{rate_id: "rat_123"})
 
   """
-  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, term()}
+  @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
     with {:ok, %{"data" => data}} <- Client.post(client, "/cars/quotes", params, opts) do
       {:ok, data}
