@@ -55,7 +55,7 @@ defmodule Duffel.Offers do
   """
   @spec get(Client.t(), String.t(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id, opts \\ []) when is_binary(id) do
-    client |> Client.get("#{@path}/#{id}", opts) |> Client.unwrap()
+    Client.get_data(client, "#{@path}/#{id}", opts)
   end
 
   @doc """
@@ -63,7 +63,7 @@ defmodule Duffel.Offers do
   """
   @spec price(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def price(client, id) when is_binary(id) do
-    client |> Client.post("#{@path}/#{id}/actions/price", %{}) |> Client.unwrap()
+    Client.post_data(client, "#{@path}/#{id}/actions/price", %{})
   end
 
   @doc """
@@ -84,8 +84,6 @@ defmodule Duffel.Offers do
           {:ok, map()} | {:error, Error.t()}
   def update_passenger(client, offer_id, passenger_id, params)
       when is_binary(offer_id) and is_binary(passenger_id) do
-    client
-    |> Client.patch("#{@path}/#{offer_id}/passengers/#{passenger_id}", params)
-    |> Client.unwrap()
+    Client.patch_data(client, "#{@path}/#{offer_id}/passengers/#{passenger_id}", params)
   end
 end

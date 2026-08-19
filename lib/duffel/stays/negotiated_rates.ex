@@ -14,7 +14,7 @@ defmodule Duffel.Stays.NegotiatedRates do
   """
   @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
-    client |> Client.post(@path, params, opts) |> Client.unwrap()
+    Client.post_data(client, @path, params, opts)
   end
 
   @doc """
@@ -22,7 +22,7 @@ defmodule Duffel.Stays.NegotiatedRates do
   """
   @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
-    client |> Client.get("#{@path}/#{id}") |> Client.unwrap()
+    Client.get_data(client, "#{@path}/#{id}")
   end
 
   @doc """
@@ -53,7 +53,7 @@ defmodule Duffel.Stays.NegotiatedRates do
   """
   @spec update(Client.t(), String.t(), map()) :: {:ok, map()} | {:error, Error.t()}
   def update(client, id, params) when is_binary(id) do
-    client |> Client.patch("#{@path}/#{id}", params) |> Client.unwrap()
+    Client.patch_data(client, "#{@path}/#{id}", params)
   end
 
   @doc """
@@ -61,8 +61,6 @@ defmodule Duffel.Stays.NegotiatedRates do
   """
   @spec delete(Client.t(), String.t()) :: :ok | {:error, Error.t()}
   def delete(client, id) when is_binary(id) do
-    with {:ok, _body} <- Client.delete(client, "#{@path}/#{id}") do
-      :ok
-    end
+    client |> Client.delete("#{@path}/#{id}") |> Client.discard()
   end
 end

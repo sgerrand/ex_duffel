@@ -25,7 +25,7 @@ defmodule Duffel.Identity.CustomerUsers do
   """
   @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
-    client |> Client.post(@path, params, opts) |> Client.unwrap()
+    Client.post_data(client, @path, params, opts)
   end
 
   @doc """
@@ -33,7 +33,7 @@ defmodule Duffel.Identity.CustomerUsers do
   """
   @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
-    client |> Client.get("#{@path}/#{id}") |> Client.unwrap()
+    Client.get_data(client, "#{@path}/#{id}")
   end
 
   @doc """
@@ -64,6 +64,6 @@ defmodule Duffel.Identity.CustomerUsers do
   """
   @spec update(Client.t(), String.t(), map()) :: {:ok, map()} | {:error, Error.t()}
   def update(client, id, params) when is_binary(id) do
-    client |> Client.put("#{@path}/#{id}", params) |> Client.unwrap()
+    Client.put_data(client, "#{@path}/#{id}", params)
   end
 end

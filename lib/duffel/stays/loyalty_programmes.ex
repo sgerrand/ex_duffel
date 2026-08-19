@@ -14,6 +14,6 @@ defmodule Duffel.Stays.LoyaltyProgrammes do
   """
   @spec list(Client.t()) :: {:ok, [map()]} | {:error, Error.t()}
   def list(client) do
-    client |> Client.get(@path) |> Client.unwrap()
+    Client.get_data(client, @path)
   end
 end

@@ -126,6 +126,22 @@ defmodule Duffel.ClientTest do
     end
   end
 
+  describe "patch/4 and put/4" do
+    test "wrap the body in the data envelope" do
+      stub(fn conn ->
+        {:ok, body, conn} = Plug.Conn.read_body(conn)
+
+        Req.Test.json(conn, %{"data" => %{"method" => conn.method, "body" => Jason.decode!(body)}})
+      end)
+
+      assert {:ok, %{"data" => %{"method" => "PATCH", "body" => %{"data" => %{"a" => 1}}}}} =
+               Client.patch(client(), "/air/orders/ord_1", %{a: 1})
+
+      assert {:ok, %{"data" => %{"method" => "PUT", "body" => %{"data" => %{"a" => 1}}}}} =
+               Client.put(client(), "/air/orders/ord_1", %{a: 1})
+    end
+  end
+
   describe "post/4" do
     test "wraps the body in the data envelope" do
       stub(fn conn ->
@@ -166,6 +182,40 @@ defmodule Duffel.ClientTest do
 
       assert {:error, %Error{type: :unexpected_response}} =
                Duffel.Orders.get(client(), "ord_1")
+    end
+  end
+
+  describe "discard/1" do
+    test "reports success without the body" do
+      assert Client.discard({:ok, %{"data" => %{}}}) == :ok
+      assert Client.discard({:ok, ""}) == :ok
+    end
+
+    test "passes errors through untouched" do
+      error = {:error, %Error{type: :api_error}}
+      assert Client.discard(error) == error
+    end
+  end
+
+  describe "get_data/3, post_data/4, patch_data/4 and put_data/4" do
+    setup do
+      stub(fn conn ->
+        Req.Test.json(conn, %{"data" => %{"method" => conn.method, "path" => conn.request_path}})
+      end)
+    end
+
+    test "each performs its request and unwraps the resource" do
+      assert Client.get_data(client(), "/air/orders") ==
+               {:ok, %{"method" => "GET", "path" => "/air/orders"}}
+
+      assert Client.post_data(client(), "/air/orders", %{}) ==
+               {:ok, %{"method" => "POST", "path" => "/air/orders"}}
+
+      assert Client.patch_data(client(), "/air/orders/ord_1", %{}) ==
+               {:ok, %{"method" => "PATCH", "path" => "/air/orders/ord_1"}}
+
+      assert Client.put_data(client(), "/air/orders/ord_1", %{}) ==
+               {:ok, %{"method" => "PUT", "path" => "/air/orders/ord_1"}}
     end
   end
 

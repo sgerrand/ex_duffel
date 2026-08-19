@@ -32,7 +32,7 @@ defmodule Duffel.Stays.Search do
   """
   @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
-    client |> Client.post("/stays/search", params, opts) |> Client.unwrap()
+    Client.post_data(client, "/stays/search", params, opts)
   end
 
   @doc """
@@ -42,6 +42,6 @@ defmodule Duffel.Stays.Search do
   def fetch_all_rates(client, search_result_id) when is_binary(search_result_id) do
     path = "/stays/search_results/#{search_result_id}/actions/fetch_all_rates"
 
-    client |> Client.post(path, %{}) |> Client.unwrap()
+    Client.post_data(client, path, %{})
   end
 end

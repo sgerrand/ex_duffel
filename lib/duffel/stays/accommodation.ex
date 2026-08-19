@@ -38,7 +38,7 @@ defmodule Duffel.Stays.Accommodation do
   """
   @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
-    client |> Client.get("#{@path}/#{id}") |> Client.unwrap()
+    Client.get_data(client, "#{@path}/#{id}")
   end
 
   @doc """
@@ -58,7 +58,7 @@ defmodule Duffel.Stays.Accommodation do
   """
   @spec suggestions(Client.t(), map()) :: {:ok, [map()]} | {:error, Error.t()}
   def suggestions(client, params) do
-    client |> Client.post("#{@path}/suggestions", params) |> Client.unwrap()
+    Client.post_data(client, "#{@path}/suggestions", params)
   end
 
   @doc """
@@ -70,6 +70,6 @@ defmodule Duffel.Stays.Accommodation do
   @spec reviews(Client.t(), String.t(), keyword() | map()) ::
           {:ok, map()} | {:error, Error.t()}
   def reviews(client, id, params \\ []) when is_binary(id) do
-    client |> Client.get("#{@path}/#{id}/reviews", params: Map.new(params)) |> Client.unwrap()
+    Client.get_data(client, "#{@path}/#{id}/reviews", params: Map.new(params))
   end
 end

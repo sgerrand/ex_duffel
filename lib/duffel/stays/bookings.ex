@@ -33,7 +33,7 @@ defmodule Duffel.Stays.Bookings do
   """
   @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
-    client |> Client.post(@path, params, opts) |> Client.unwrap()
+    Client.post_data(client, @path, params, opts)
   end
 
   @doc """
@@ -41,7 +41,7 @@ defmodule Duffel.Stays.Bookings do
   """
   @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
-    client |> Client.get("#{@path}/#{id}") |> Client.unwrap()
+    Client.get_data(client, "#{@path}/#{id}")
   end
 
   @doc """
@@ -77,7 +77,7 @@ defmodule Duffel.Stays.Bookings do
   """
   @spec update(Client.t(), String.t(), map()) :: {:ok, map()} | {:error, Error.t()}
   def update(client, id, params) when is_binary(id) do
-    client |> Client.patch("#{@path}/#{id}", params) |> Client.unwrap()
+    Client.patch_data(client, "#{@path}/#{id}", params)
   end
 
   @doc """
@@ -85,7 +85,7 @@ defmodule Duffel.Stays.Bookings do
   """
   @spec cancel(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def cancel(client, id) when is_binary(id) do
-    client |> Client.post("#{@path}/#{id}/actions/cancel", %{}) |> Client.unwrap()
+    Client.post_data(client, "#{@path}/#{id}/actions/cancel", %{})
   end
 
   @doc """
@@ -102,6 +102,6 @@ defmodule Duffel.Stays.Bookings do
   @spec create_payment_instruction(Client.t(), String.t(), map()) ::
           {:ok, map()} | {:error, Error.t()}
   def create_payment_instruction(client, id, params) when is_binary(id) do
-    client |> Client.post("#{@path}/#{id}/payment_instructions", params) |> Client.unwrap()
+    Client.post_data(client, "#{@path}/#{id}/payment_instructions", params)
   end
 end

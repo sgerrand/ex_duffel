@@ -50,7 +50,7 @@ defmodule Duffel.Orders do
   """
   @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
-    client |> Client.post(@path, params, opts) |> Client.unwrap()
+    Client.post_data(client, @path, params, opts)
   end
 
   @doc """
@@ -58,7 +58,7 @@ defmodule Duffel.Orders do
   """
   @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
-    client |> Client.get("#{@path}/#{id}") |> Client.unwrap()
+    Client.get_data(client, "#{@path}/#{id}")
   end
 
   @doc """
@@ -100,7 +100,7 @@ defmodule Duffel.Orders do
   """
   @spec update(Client.t(), String.t(), map()) :: {:ok, map()} | {:error, Error.t()}
   def update(client, id, params) when is_binary(id) do
-    client |> Client.patch("#{@path}/#{id}", params) |> Client.unwrap()
+    Client.patch_data(client, "#{@path}/#{id}", params)
   end
 
   @doc """
@@ -109,7 +109,7 @@ defmodule Duffel.Orders do
   """
   @spec price(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def price(client, id) when is_binary(id) do
-    client |> Client.post("#{@path}/#{id}/actions/price", %{}) |> Client.unwrap()
+    Client.post_data(client, "#{@path}/#{id}/actions/price", %{})
   end
 
   @doc """
@@ -117,7 +117,7 @@ defmodule Duffel.Orders do
   """
   @spec available_services(Client.t(), String.t()) :: {:ok, [map()]} | {:error, Error.t()}
   def available_services(client, id) when is_binary(id) do
-    client |> Client.get("#{@path}/#{id}/available_services") |> Client.unwrap()
+    Client.get_data(client, "#{@path}/#{id}/available_services")
   end
 
   @doc """
@@ -134,6 +134,6 @@ defmodule Duffel.Orders do
   @spec add_services(Client.t(), String.t(), map(), keyword()) ::
           {:ok, map()} | {:error, Error.t()}
   def add_services(client, id, params, opts \\ []) when is_binary(id) do
-    client |> Client.post("#{@path}/#{id}/services", params, opts) |> Client.unwrap()
+    Client.post_data(client, "#{@path}/#{id}/services", params, opts)
   end
 end

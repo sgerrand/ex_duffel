@@ -40,7 +40,7 @@ defmodule Duffel.AirlineInitiatedChanges do
   """
   @spec accept(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def accept(client, id) when is_binary(id) do
-    client |> Client.post("#{@path}/#{id}/actions/accept", %{}) |> Client.unwrap()
+    Client.post_data(client, "#{@path}/#{id}/actions/accept", %{})
   end
 
   @doc """
@@ -54,6 +54,6 @@ defmodule Duffel.AirlineInitiatedChanges do
   """
   @spec update(Client.t(), String.t(), map()) :: {:ok, map()} | {:error, Error.t()}
   def update(client, id, params) when is_binary(id) do
-    client |> Client.patch("#{@path}/#{id}", params) |> Client.unwrap()
+    Client.patch_data(client, "#{@path}/#{id}", params)
   end
 end

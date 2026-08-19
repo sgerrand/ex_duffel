@@ -28,6 +28,6 @@ defmodule Duffel.ThreeDSecureSessions do
   """
   @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
-    client |> Client.post(@path, params, opts) |> Client.unwrap()
+    Client.post_data(client, @path, params, opts)
   end
 end

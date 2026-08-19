@@ -33,7 +33,7 @@ defmodule Duffel.Cars.Bookings do
   """
   @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
-    client |> Client.post(@path, params, opts) |> Client.unwrap()
+    Client.post_data(client, @path, params, opts)
   end
 
   @doc """
@@ -41,7 +41,7 @@ defmodule Duffel.Cars.Bookings do
   """
   @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
-    client |> Client.get("#{@path}/#{id}") |> Client.unwrap()
+    Client.get_data(client, "#{@path}/#{id}")
   end
 
   @doc """
@@ -49,6 +49,6 @@ defmodule Duffel.Cars.Bookings do
   """
   @spec cancel(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def cancel(client, id) when is_binary(id) do
-    client |> Client.post("#{@path}/#{id}/actions/cancel", %{}) |> Client.unwrap()
+    Client.post_data(client, "#{@path}/#{id}/actions/cancel", %{})
   end
 end

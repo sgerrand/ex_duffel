@@ -41,7 +41,7 @@ defmodule Duffel.Cards do
   def create(client, params, opts \\ []) do
     opts = Keyword.put_new(opts, :base_url, client.cards_base_url)
 
-    client |> Client.post(@path, params, opts) |> Client.unwrap()
+    Client.post_data(client, @path, params, opts)
   end
 
   @doc """
@@ -49,9 +49,6 @@ defmodule Duffel.Cards do
   """
   @spec delete(Client.t(), String.t()) :: :ok | {:error, Error.t()}
   def delete(client, id) when is_binary(id) do
-    with {:ok, _body} <-
-           Client.delete(client, "#{@path}/#{id}", base_url: client.cards_base_url) do
-      :ok
-    end
+    client |> Client.delete("#{@path}/#{id}", base_url: client.cards_base_url) |> Client.discard()
   end
 end

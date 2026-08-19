@@ -24,7 +24,7 @@ defmodule Duffel.PartialOfferRequests do
   """
   @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
-    client |> Client.post(@path, params, opts) |> Client.unwrap()
+    Client.post_data(client, @path, params, opts)
   end
 
   @doc """
@@ -48,7 +48,7 @@ defmodule Duffel.PartialOfferRequests do
         Keyword.get(opts, :selected_partial_offers, [])
       )
 
-    client |> Client.get(path) |> Client.unwrap()
+    Client.get_data(client, path)
   end
 
   @doc """
@@ -64,7 +64,7 @@ defmodule Duffel.PartialOfferRequests do
       when is_binary(id) and is_list(selected_partial_offers) do
     path = append_selected_partial_offers("#{@path}/#{id}/fares", selected_partial_offers)
 
-    client |> Client.get(path) |> Client.unwrap()
+    Client.get_data(client, path)
   end
 
   # `selected_partial_offer[]` repeats once per selected slice. Req's `:params`

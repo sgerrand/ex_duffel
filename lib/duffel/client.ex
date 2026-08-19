@@ -177,10 +177,13 @@ defmodule Duffel.Client do
   @doc """
   Takes the resource out of the `data` envelope Duffel wraps it in.
 
-  Resource modules pipe every request through this, so a success response
-  with no `data` key becomes an `:unexpected_response` error instead of
-  being handed back as if the envelope were the resource. Errors pass
-  through untouched.
+  A success response with no `data` key becomes an `:unexpected_response`
+  error rather than being handed back as if the envelope were the
+  resource. Errors pass through untouched.
+
+  `get_data/3`, `post_data/4`, `patch_data/4` and `put_data/4` do this for
+  you; reach for `unwrap/1` directly only when you have built the request
+  some other way.
 
   ## Examples
 
@@ -192,6 +195,59 @@ defmodule Duffel.Client do
   def unwrap({:ok, %{"data" => data}}), do: {:ok, data}
   def unwrap({:ok, body}), do: {:error, Error.unexpected_response(body)}
   def unwrap({:error, %Error{}} = error), do: error
+
+  @doc """
+  Throws away the response body, reporting only whether the request
+  succeeded.
+
+  For endpoints that return nothing useful, such as a delete or an action
+  that just acknowledges. Errors pass through untouched.
+
+  ## Examples
+
+      client |> delete("/air/webhooks/sev_123") |> discard()
+      #=> :ok
+
+  """
+  @spec discard(response()) :: :ok | {:error, Error.t()}
+  def discard({:ok, _body}), do: :ok
+  def discard({:error, %Error{}} = error), do: error
+
+  @doc """
+  Performs a `GET` request and unwraps the resource from the `data`
+  envelope. See `get/3` and `unwrap/1`.
+  """
+  @spec get_data(t(), String.t(), keyword()) :: {:ok, term()} | {:error, Error.t()}
+  def get_data(%__MODULE__{} = client, path, opts \\ []) do
+    client |> get(path, opts) |> unwrap()
+  end
+
+  @doc """
+  Performs a `POST` request and unwraps the resource from the `data`
+  envelope. See `post/4` and `unwrap/1`.
+  """
+  @spec post_data(t(), String.t(), map(), keyword()) :: {:ok, term()} | {:error, Error.t()}
+  def post_data(%__MODULE__{} = client, path, body, opts \\ []) do
+    client |> post(path, body, opts) |> unwrap()
+  end
+
+  @doc """
+  Performs a `PATCH` request and unwraps the resource from the `data`
+  envelope. See `patch/4` and `unwrap/1`.
+  """
+  @spec patch_data(t(), String.t(), map(), keyword()) :: {:ok, term()} | {:error, Error.t()}
+  def patch_data(%__MODULE__{} = client, path, body, opts \\ []) do
+    client |> patch(path, body, opts) |> unwrap()
+  end
+
+  @doc """
+  Performs a `PUT` request and unwraps the resource from the `data`
+  envelope. See `put/4` and `unwrap/1`.
+  """
+  @spec put_data(t(), String.t(), map(), keyword()) :: {:ok, term()} | {:error, Error.t()}
+  def put_data(%__MODULE__{} = client, path, body, opts \\ []) do
+    client |> put(path, body, opts) |> unwrap()
+  end
 
   @doc """
   Performs a `GET` request against a list endpoint and wraps the result

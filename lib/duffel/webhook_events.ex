@@ -37,7 +37,7 @@ defmodule Duffel.WebhookEvents do
   """
   @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
-    client |> Client.get("#{@path}/#{id}") |> Client.unwrap()
+    Client.get_data(client, "#{@path}/#{id}")
   end
 
   @doc """
@@ -45,8 +45,6 @@ defmodule Duffel.WebhookEvents do
   """
   @spec redeliver(Client.t(), String.t()) :: :ok | {:error, Error.t()}
   def redeliver(client, id) when is_binary(id) do
-    with {:ok, _body} <- Client.post(client, "#{@path}/#{id}/actions/redeliver", %{}) do
-      :ok
-    end
+    client |> Client.post("#{@path}/#{id}/actions/redeliver", %{}) |> Client.discard()
   end
 end
