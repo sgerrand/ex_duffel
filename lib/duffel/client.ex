@@ -274,11 +274,16 @@ defmodule Duffel.Client do
   @doc """
   Performs a `GET` request against a list endpoint and wraps the result
   in a `Duffel.Page`.
+
+  Like `unwrap/1`, a success response whose `data` is missing or is not a
+  list is an `:unexpected_response` error rather than an empty page.
   """
   @spec list(t(), String.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, Error.t()}
   def list(%__MODULE__{} = client, path, params \\ []) do
-    with {:ok, body} <- get(client, path, params: Map.new(params)) do
-      {:ok, Page.from_body(body)}
+    case get(client, path, params: Map.new(params)) do
+      {:ok, %{"data" => data} = body} when is_list(data) -> {:ok, Page.from_body(body)}
+      {:ok, body} -> {:error, Error.unexpected_response(body)}
+      {:error, %Error{}} = error -> error
     end
   end
 

@@ -86,7 +86,7 @@ defmodule Duffel.Page do
     meta = body["meta"] || %{}
 
     %__MODULE__{
-      data: body["data"] || [],
+      data: body["data"],
       after_cursor: meta["after"],
       before_cursor: meta["before"],
       limit: meta["limit"]

@@ -563,6 +563,27 @@ defmodule Duffel.ClientTest do
       end
     end
 
+    test "list/3 errors when the body has no data list" do
+      stub(fn conn -> Req.Test.json(conn, %{"meta" => %{"limit" => 50}}) end)
+
+      assert {:error, %Error{type: :unexpected_response, reason: %{"meta" => _}}} =
+               Client.list(client(), "/air/orders")
+    end
+
+    test "list/3 errors when data is not a list" do
+      stub(fn conn -> Req.Test.json(conn, %{"data" => nil}) end)
+
+      assert {:error, %Error{type: :unexpected_response}} = Client.list(client(), "/air/orders")
+    end
+
+    test "list/3 passes request errors through" do
+      stub(fn conn ->
+        conn |> Plug.Conn.put_status(422) |> Req.Test.json(%{"errors" => []})
+      end)
+
+      assert {:error, %Error{status: 422}} = Client.list(client(), "/air/orders")
+    end
+
     test "stream/3 stops when Duffel hands back the cursor it was given" do
       stub(fn conn ->
         Req.Test.json(conn, %{
