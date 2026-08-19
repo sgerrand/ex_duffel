@@ -198,16 +198,26 @@ A transport error has `status: nil` and keeps the underlying exception,
 usually a `Req.TransportError`, under `reason`.
 
 Rate-limited (429) and transient server errors are retried automatically
-with backoff. Every `POST` carries an `Idempotency-Key`, so a retried
-booking cannot be created twice.
+with backoff, honouring `retry-after`. When a response reports your
+remaining allowance, `Duffel.RateLimit` carries it — on the error, and on
+every `[:duffel, :request, :stop]` telemetry event, so you can slow down
+before Duffel starts refusing requests:
+
+```elixir
+{:error, %Duffel.Error{type: :rate_limit_error, rate_limit: rate_limit}} ->
+  retry_in(rate_limit.retry_after_ms)
+```
+
+Every `POST` carries an `Idempotency-Key`, so a retried booking cannot be
+created twice.
 
 ## Telemetry
 
 Every request emits a [`telemetry`](https://hexdocs.pm/telemetry) span
 under the `[:duffel, :request]` prefix — `:start`, `:stop` and
 `:exception` events. Metadata carries `:method`, `:path` and `:base_url`;
-the `:stop` event also reports `:status` and `:result` (`:ok` or
-`:error`). Attach a handler to measure latency or log requests:
+the `:stop` event also reports `:status`, `:result` (`:ok` or `:error`)
+and `:rate_limit`. Attach a handler to measure latency or log requests:
 
 ```elixir
 :telemetry.attach(

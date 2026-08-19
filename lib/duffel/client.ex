@@ -45,7 +45,8 @@ defmodule Duffel.Client do
 
   Metadata on every event: `:method`, `:path` and `:base_url`. The `:stop`
   event also carries `:status` (the HTTP status, or `nil` on a transport
-  error) and `:result` (`:ok` or `:error`).
+  error), `:result` (`:ok` or `:error`) and `:rate_limit` (a
+  `Duffel.RateLimit`, or `nil` when the response reported none).
 
   Attach a handler to measure request latency:
 
@@ -61,7 +62,7 @@ defmodule Duffel.Client do
 
   """
 
-  alias Duffel.{Error, Page}
+  alias Duffel.{Error, Page, RateLimit}
 
   @base_url "https://api.duffel.com"
   @cards_base_url "https://api.duffel.cards"
@@ -348,7 +349,11 @@ defmodule Duffel.Client do
       result = handle_response(response)
 
       stop_metadata =
-        Map.merge(metadata, %{status: response_status(response), result: result_tag(result)})
+        Map.merge(metadata, %{
+          status: response_status(response),
+          result: result_tag(result),
+          rate_limit: response_rate_limit(response)
+        })
 
       {result, stop_metadata}
     end)
@@ -384,6 +389,11 @@ defmodule Duffel.Client do
 
   defp response_status({:ok, %Req.Response{status: status}}), do: status
   defp response_status(_other), do: nil
+
+  defp response_rate_limit({:ok, %Req.Response{} = response}),
+    do: RateLimit.from_response(response)
+
+  defp response_rate_limit(_other), do: nil
 
   defp result_tag({:ok, _body}), do: :ok
   defp result_tag({:error, _reason}), do: :error

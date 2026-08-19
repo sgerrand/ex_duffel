@@ -29,6 +29,15 @@ defmodule Duffel.Error do
   The underlying exception, usually a `Req.TransportError`, is kept under
   `:reason` for when you need to tell those cases apart.
 
+  ## Rate limits
+
+  `:rate_limit` holds a `Duffel.RateLimit` whenever the response reported
+  your remaining allowance, which is most useful on a
+  `:rate_limit_error`:
+
+      {:error, %Duffel.Error{type: :rate_limit_error, rate_limit: rate_limit}} ->
+        retry_in(rate_limit.retry_after_ms)
+
   ## Unexpected responses
 
   Duffel wraps every resource in a `data` envelope. A success response
@@ -57,6 +66,7 @@ defmodule Duffel.Error do
     :request_id,
     :status,
     :reason,
+    :rate_limit,
     errors: []
   ]
 
@@ -70,6 +80,7 @@ defmodule Duffel.Error do
           request_id: String.t() | nil,
           status: pos_integer() | nil,
           reason: term(),
+          rate_limit: Duffel.RateLimit.t() | nil,
           errors: [map()]
         }
 
@@ -85,7 +96,7 @@ defmodule Duffel.Error do
 
   @doc false
   @spec from_response(Req.Response.t()) :: t()
-  def from_response(%Req.Response{status: status, body: body}) do
+  def from_response(%Req.Response{status: status, body: body} = response) do
     {errors, request_id} =
       case body do
         %{"errors" => errors} = body when is_list(errors) ->
@@ -106,6 +117,7 @@ defmodule Duffel.Error do
       source: first["source"],
       request_id: request_id,
       status: status,
+      rate_limit: Duffel.RateLimit.from_response(response),
       errors: errors
     }
   end

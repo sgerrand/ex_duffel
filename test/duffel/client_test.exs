@@ -13,7 +13,7 @@ defmodule Duffel.ClientTest do
 
   doctest Duffel.Client
 
-  alias Duffel.{Client, Error, Page}
+  alias Duffel.{Client, Error, Page, RateLimit}
 
   defp client(opts \\ []) do
     Duffel.new(
@@ -255,6 +255,51 @@ defmodule Duffel.ClientTest do
     end
   end
 
+  describe "rate limits" do
+    defp rate_limited_stub(headers) do
+      stub(fn conn ->
+        conn
+        |> then(
+          &Enum.reduce(headers, &1, fn {k, v}, acc -> Plug.Conn.put_resp_header(acc, k, v) end)
+        )
+        |> Plug.Conn.put_status(429)
+        |> Req.Test.json(%{"errors" => [%{"type" => "rate_limit_error"}]})
+      end)
+    end
+
+    test "are reported on the error" do
+      rate_limited_stub([
+        {"ratelimit-limit", "300"},
+        {"ratelimit-remaining", "0"},
+        {"ratelimit-reset", "2026-08-19T12:00:00Z"},
+        {"retry-after", "12"}
+      ])
+
+      assert {:error, %Error{type: :rate_limit_error} = error} =
+               Client.get(client(), "/air/orders")
+
+      assert error.rate_limit == %RateLimit{
+               limit: 300,
+               remaining: 0,
+               reset: "2026-08-19T12:00:00Z",
+               retry_after_ms: 12_000
+             }
+    end
+
+    test "ignore headers that are absent or unreadable" do
+      rate_limited_stub([{"ratelimit-remaining", "not a number"}, {"ratelimit-limit", "300"}])
+
+      assert {:error, %Error{rate_limit: rate_limit}} = Client.get(client(), "/air/orders")
+      assert rate_limit == %RateLimit{limit: 300}
+    end
+
+    test "are nil when the response reports none" do
+      rate_limited_stub([])
+
+      assert {:error, %Error{rate_limit: nil}} = Client.get(client(), "/air/orders")
+    end
+  end
+
   describe "unwrap/1" do
     test "takes the resource out of the data envelope" do
       assert Client.unwrap({:ok, %{"data" => %{"id" => "ord_1"}}}) == {:ok, %{"id" => "ord_1"}}
@@ -443,13 +488,26 @@ defmodule Duffel.ClientTest do
                        %{status: 422, result: :error}}
     end
 
+    test "stop carries the rate limit a successful response reported" do
+      stub(fn conn ->
+        conn
+        |> Plug.Conn.put_resp_header("ratelimit-remaining", "42")
+        |> Req.Test.json(%{"data" => %{}})
+      end)
+
+      assert {:ok, _} = Client.get(client(), "/air/offers")
+
+      assert_received {:telemetry, [:duffel, :request, :stop], _measurements,
+                       %{rate_limit: %RateLimit{remaining: 42}}}
+    end
+
     test "stop reports nil status on transport errors" do
       stub(fn conn -> Req.Test.transport_error(conn, :econnrefused) end)
 
       assert {:error, _} = Client.get(client(), "/air/offers")
 
       assert_received {:telemetry, [:duffel, :request, :stop], _measurements,
-                       %{status: nil, result: :error}}
+                       %{status: nil, result: :error, rate_limit: nil}}
     end
   end
 

@@ -57,7 +57,8 @@ defmodule Duffel.MixProject do
           Duffel,
           Duffel.Client,
           Duffel.Error,
-          Duffel.Page
+          Duffel.Page,
+          Duffel.RateLimit
         ],
         Schemas: [
           Duffel.Schema,
