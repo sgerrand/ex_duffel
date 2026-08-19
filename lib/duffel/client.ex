@@ -49,6 +49,9 @@ defmodule Duffel.Client do
   @cards_base_url "https://api.duffel.cards"
   @api_version "v2"
 
+  # The client is passed to every resource function, so it shows up in stack
+  # traces, crash reports and error trackers. Keep the token out of them.
+  @derive {Inspect, except: [:access_token]}
   defstruct access_token: nil,
             base_url: @base_url,
             cards_base_url: @cards_base_url,
@@ -69,6 +72,16 @@ defmodule Duffel.Client do
   Builds a client struct.
 
   Raises `ArgumentError` if `:access_token` is missing.
+
+  The token is hidden when the struct is inspected, so it does not reach
+  logs or error trackers. Read `client.access_token` to get it back.
+
+  ## Examples
+
+      iex> client = Duffel.new(access_token: "duffel_test_abc")
+      iex> inspect(client) =~ "duffel_test_abc"
+      false
+
   """
   @spec new(keyword()) :: t()
   def new(opts) when is_list(opts) do

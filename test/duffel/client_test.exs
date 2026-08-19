@@ -1,6 +1,8 @@
 defmodule Duffel.ClientTest do
   use ExUnit.Case, async: true
 
+  doctest Duffel.Client
+
   alias Duffel.{Client, Error, Page}
 
   defp client(opts \\ []) do
@@ -11,6 +13,20 @@ defmodule Duffel.ClientTest do
   end
 
   defp stub(fun), do: Req.Test.stub(__MODULE__, fun)
+
+  describe "new/1" do
+    test "hides the access token when the client is inspected" do
+      inspected = inspect(client(access_token: "duffel_live_secret"))
+
+      refute inspected =~ "duffel_live_secret"
+      refute inspected =~ "access_token"
+      assert inspected =~ "https://api.duffel.com"
+    end
+
+    test "keeps the access token readable on the struct" do
+      assert client(access_token: "duffel_live_secret").access_token == "duffel_live_secret"
+    end
+  end
 
   describe "request headers" do
     test "sends auth, version and accept headers" do
