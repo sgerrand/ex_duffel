@@ -34,6 +34,11 @@ defmodule Duffel.MixProject do
     [
       {:req, "~> 0.5"},
       {:telemetry, "~> 1.0"},
+      # Used by the test suite to decode request bodies. Optional rather than
+      # `only: :test` because Req depends on it outside the test environment,
+      # and Mix rejects a dependency whose `:only` is narrower than its
+      # parent's.
+      {:jason, "~> 1.0", optional: true},
       {:plug, "~> 1.15", only: :test},
       {:ex_doc, "~> 0.26", only: :dev, runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
