@@ -341,4 +341,21 @@ defmodule Duffel.SchemaTest do
                Schema.cast_list([%{"id" => "pas_1"}, %{"id" => "pas_2"}], Passenger)
     end
   end
+
+  describe "from_map/1" do
+    test "gives back a struct it has already decoded" do
+      schemas =
+        :duffel
+        |> Application.spec(:modules)
+        |> Enum.filter(&(Code.ensure_loaded?(&1) and function_exported?(&1, :from_map, 1)))
+
+      assert length(schemas) >= 17
+
+      for schema <- schemas do
+        decoded = schema.from_map(%{})
+
+        assert schema.from_map(decoded) == decoded
+      end
+    end
+  end
 end

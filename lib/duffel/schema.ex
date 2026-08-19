@@ -21,6 +21,10 @@ defmodule Duffel.Schema do
   unknown keys are dropped, missing keys become `nil`, missing lists become
   `[]`, and a missing nested object stays `nil`.
 
+  Decoding is also safe to repeat — handing `from_map/1` something it has
+  already decoded gives the same struct back, so mapping over a list twice
+  costs nothing and raises nothing.
+
   Schemas cover three areas:
 
   * Flights: `Duffel.Schema.OfferRequest`, `Duffel.Schema.Offer`,

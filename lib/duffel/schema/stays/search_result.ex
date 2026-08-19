@@ -34,7 +34,9 @@ defmodule Duffel.Schema.Stays.SearchResult do
         }
 
   @doc "Decodes a raw stays search result map into a `#{inspect(__MODULE__)}`."
-  @spec from_map(map()) :: t()
+  @spec from_map(map() | t()) :: t()
+  def from_map(%__MODULE__{} = decoded), do: decoded
+
   def from_map(map) when is_map(map) do
     %__MODULE__{
       id: map["id"],
