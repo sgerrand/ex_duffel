@@ -155,6 +155,63 @@ defmodule Duffel.ClientTest do
     end
   end
 
+  describe "query parameters" do
+    test "sends one parameter per element of a list value" do
+      stub(fn conn ->
+        assert conn.query_string == "passenger_name%5B%5D=Amelia&passenger_name%5B%5D=Earhart"
+        assert conn.params["passenger_name"] == ["Amelia", "Earhart"]
+        Req.Test.json(conn, %{"data" => []})
+      end)
+
+      assert {:ok, _} =
+               Client.list(client(), "/air/orders", %{
+                 "passenger_name[]" => ["Amelia", "Earhart"]
+               })
+    end
+
+    test "sends scalar parameters unchanged" do
+      stub(fn conn ->
+        assert conn.query_params == %{"limit" => "50", "sort" => "total_amount"}
+        Req.Test.json(conn, %{"data" => []})
+      end)
+
+      assert {:ok, _} = Client.list(client(), "/air/offers", limit: 50, sort: "total_amount")
+    end
+
+    test "sends no query string when there are no parameters" do
+      stub(fn conn ->
+        assert conn.query_string == ""
+        Req.Test.json(conn, %{"data" => %{}})
+      end)
+
+      assert {:ok, _} = Client.get(client(), "/air/orders/ord_1")
+    end
+
+    test "drops a parameter whose list is empty" do
+      stub(fn conn ->
+        assert conn.query_string == "limit=50"
+        Req.Test.json(conn, %{"data" => []})
+      end)
+
+      assert {:ok, _} = Client.list(client(), "/air/orders", %{"limit" => 50, "tag[]" => []})
+    end
+
+    test "stream/3 replaces a caller's own after cursor rather than repeating it" do
+      stub(fn conn ->
+        case conn.query_string do
+          "after=cur_1" ->
+            Req.Test.json(conn, %{"data" => [%{"id" => "a"}], "meta" => %{"after" => "cur_2"}})
+
+          "after=cur_2" ->
+            Req.Test.json(conn, %{"data" => [%{"id" => "b"}], "meta" => %{"after" => nil}})
+        end
+      end)
+
+      assert client() |> Client.stream("/air/orders", after: "cur_1") |> Enum.to_list() ==
+               [%{"id" => "a"}, %{"id" => "b"}]
+    end
+  end
+
   describe "unwrap/1" do
     test "takes the resource out of the data envelope" do
       assert Client.unwrap({:ok, %{"data" => %{"id" => "ord_1"}}}) == {:ok, %{"id" => "ord_1"}}

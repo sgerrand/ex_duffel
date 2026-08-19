@@ -112,7 +112,10 @@ defmodule Duffel.Client do
 
   ## Options
 
-    * `:params` - query string parameters
+    * `:params` - query string parameters. A list value is sent as one
+      parameter per element, which is how Duffel's `key[]` array filters
+      work: `params: %{"passenger_name[]" => ["Amelia", "Earhart"]}` sends
+      `passenger_name[]=Amelia&passenger_name[]=Earhart`.
 
   """
   @spec get(t(), String.t(), keyword()) :: response()
@@ -268,7 +271,9 @@ defmodule Duffel.Client do
   """
   @spec stream(t(), String.t(), keyword() | map()) :: Enumerable.t()
   def stream(%__MODULE__{} = client, path, params \\ []) do
-    params = Map.new(params)
+    # Keys are normalised so the cursor added below replaces a caller's own
+    # `after` rather than being sent alongside it.
+    params = Map.new(params, fn {key, value} -> {to_string(key), value} end)
 
     Stream.resource(
       fn -> {:page, params} end,
@@ -282,7 +287,7 @@ defmodule Duffel.Client do
               {data, :done}
 
             {:ok, %Page{data: data, after_cursor: cursor}} ->
-              {data, {:page, Map.put(params, :after, cursor)}}
+              {data, {:page, Map.put(params, "after", cursor)}}
 
             {:error, %Error{} = error} ->
               raise error
@@ -296,7 +301,9 @@ defmodule Duffel.Client do
   @spec request(t(), atom(), String.t(), keyword()) :: response()
   def request(%__MODULE__{} = client, method, path, opts \\ []) do
     {idempotency_key, opts} = Keyword.pop(opts, :idempotency_key)
+    {params, opts} = Keyword.pop(opts, :params)
     base_url = Keyword.get(opts, :base_url, client.base_url)
+    url = append_query(path, params)
 
     headers =
       [{"duffel-version", client.api_version}, {"accept", "application/json"}] ++
@@ -306,13 +313,13 @@ defmodule Duffel.Client do
       [
         method: method,
         base_url: base_url,
-        url: path,
+        url: url,
         auth: {:bearer, client.access_token},
         headers: headers,
         compressed: true,
         retry: :transient
       ]
-      |> Keyword.merge(Keyword.take(opts, [:params, :json]))
+      |> Keyword.merge(Keyword.take(opts, [:json]))
       |> Keyword.merge(client.req_options)
 
     metadata = %{method: method, path: path, base_url: base_url}
@@ -326,6 +333,28 @@ defmodule Duffel.Client do
 
       {result, stop_metadata}
     end)
+  end
+
+  # Duffel takes repeated `key[]` parameters for array filters. Req's `:params`
+  # option cannot express those: it keeps only the last value for a repeated
+  # key, and renders a list value as one run-together string. So the query
+  # string is built here and appended to the path.
+  defp append_query(path, nil), do: path
+
+  defp append_query(path, params) do
+    case encode_query(params) do
+      "" -> path
+      query -> path <> if(String.contains?(path, "?"), do: "&", else: "?") <> query
+    end
+  end
+
+  defp encode_query(params) do
+    params
+    |> Enum.flat_map(fn
+      {key, values} when is_list(values) -> Enum.map(values, &{to_string(key), &1})
+      {key, value} -> [{to_string(key), value}]
+    end)
+    |> URI.encode_query()
   end
 
   # Failed requests are retried automatically, including POSTs, so every POST

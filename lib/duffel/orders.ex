@@ -69,7 +69,8 @@ defmodule Duffel.Orders do
     * `:booking_reference` - filter by airline booking reference (PNR)
     * `:awaiting_payment` - filter hold orders awaiting payment (boolean)
     * `:requires_action` - orders with unactioned airline-initiated changes
-    * `"passenger_name[]"` - filter by passenger name
+    * `"passenger_name[]"` - filter by passenger name. Pass a list to filter
+      on several: `%{"passenger_name[]" => ["Amelia", "Earhart"]}`
     * `:sort` - `"payment_required_by"`, `"created_at"` or
       `"next_departure"`, prefix with `-` for descending
     * `:limit` / `:after` / `:before` - pagination (see `Duffel.Page`)
