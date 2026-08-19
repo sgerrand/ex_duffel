@@ -286,7 +286,9 @@ defmodule Duffel.Client do
   Lazily streams every item from a paginated list endpoint, following
   `meta.after` cursors until exhausted.
 
-  Raises `Duffel.Error` if any page request fails.
+  Raises `Duffel.Error` if any page request fails, or if Duffel hands back
+  the cursor it was just given, which would otherwise fetch the same page
+  forever.
   """
   @spec stream(t(), String.t(), keyword() | map()) :: Enumerable.t()
   def stream(%__MODULE__{} = client, path, params \\ []) do
@@ -306,7 +308,7 @@ defmodule Duffel.Client do
               {data, :done}
 
             {:ok, %Page{data: data, after_cursor: cursor}} ->
-              {data, {:page, Map.put(params, "after", cursor)}}
+              {data, {:page, advance(params, cursor)}}
 
             {:error, %Error{} = error} ->
               raise error
@@ -358,6 +360,20 @@ defmodule Duffel.Client do
       {result, stop_metadata}
     end)
   end
+
+  # Handing back the cursor we just sent would fetch the same page again, and
+  # again. Stop loudly rather than spin.
+  defp advance(%{"after" => cursor} = _params, cursor) do
+    raise %Error{
+      type: :unexpected_response,
+      title: "Pagination stalled",
+      message:
+        "Duffel returned the same `after` cursor twice (#{inspect(cursor)}), " <>
+          "so the next page would repeat this one"
+    }
+  end
+
+  defp advance(params, cursor), do: Map.put(params, "after", cursor)
 
   # Duffel takes repeated `key[]` parameters for array filters. Req's `:params`
   # option cannot express those: it keeps only the last value for a repeated

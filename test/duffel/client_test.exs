@@ -563,6 +563,34 @@ defmodule Duffel.ClientTest do
       end
     end
 
+    test "stream/3 stops when Duffel hands back the cursor it was given" do
+      stub(fn conn ->
+        Req.Test.json(conn, %{
+          "data" => [%{"id" => "orq_1"}],
+          "meta" => %{"after" => "cur_stuck"}
+        })
+      end)
+
+      assert_raise Error, ~r/same `after` cursor twice \("cur_stuck"\)/, fn ->
+        client() |> Client.stream("/air/offer_requests", after: "cur_stuck") |> Enum.to_list()
+      end
+    end
+
+    test "stream/3 still follows a cursor that differs from the one sent" do
+      stub(fn conn ->
+        case conn.query_params["after"] do
+          nil ->
+            Req.Test.json(conn, %{"data" => [%{"id" => "a"}], "meta" => %{"after" => "cur_2"}})
+
+          "cur_2" ->
+            Req.Test.json(conn, %{"data" => [%{"id" => "b"}], "meta" => %{"after" => nil}})
+        end
+      end)
+
+      assert client() |> Client.stream("/air/offer_requests") |> Enum.to_list() ==
+               [%{"id" => "a"}, %{"id" => "b"}]
+    end
+
     test "stream/3 raises transport errors" do
       stub(fn conn ->
         Req.Test.transport_error(conn, :timeout)
