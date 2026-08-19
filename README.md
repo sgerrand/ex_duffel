@@ -96,8 +96,10 @@ order["booking_reference"]
 #=> "RZPNX8"
 ```
 
-Pass `:idempotency_key` when creating orders or payments to guard against
-duplicate bookings on retries.
+Failed requests are retried automatically, so every `POST` carries an
+`Idempotency-Key` header. A key is generated when you do not pass one, which
+stops a retry booking twice. Pass your own `:idempotency_key` when your own
+code may retry the same booking, so both attempts share a key.
 
 ## Pagination
 

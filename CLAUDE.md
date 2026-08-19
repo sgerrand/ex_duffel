@@ -22,7 +22,7 @@ mix docs                              # generate ExDoc docs
 Three layers; everything funnels through `Duffel.Client`:
 
 - `Duffel` (`lib/duffel.ex`) — entry point. `Duffel.new/1` builds a `%Duffel.Client{}` struct; `Duffel.new/0` reads the `:duffel` application environment. The client struct is passed explicitly to every resource function (multi-tenant by design; no global state).
-- `Duffel.Client` (`lib/duffel/client.ex`) — Req-based transport. Owns: bearer auth, `Duffel-Version` header, gzip, `retry: :transient` (auto-retries 429/5xx), the `data` request/response envelope, `Idempotency-Key` header (via `:idempotency_key` opt on `post`), pagination (`list/3` → `Duffel.Page`, `stream/3` → lazy `Stream.resource` following `meta.after` cursors).
+- `Duffel.Client` (`lib/duffel/client.ex`) — Req-based transport. Owns: bearer auth, `Duffel-Version` header, gzip, `retry: :transient` (auto-retries 429/5xx), the `data` request/response envelope, `Idempotency-Key` header (auto-generated on every `post`, overridable or disabled via the `:idempotency_key` opt), pagination (`list/3` → `Duffel.Page`, `stream/3` → lazy `Stream.resource` following `meta.after` cursors).
 - Resource modules (`lib/duffel/*.ex`, plus `lib/duffel/{stays,cars,identity}/*.ex`) — thin, no macros. Each wraps `Client.get/post/put/patch/delete/list/stream` and unwraps the response `"data"` key. `lib/duffel/offer_requests.ex` is the canonical template for new resources.
 
 Cross-cutting conventions:

@@ -7,6 +7,15 @@ defmodule Duffel.Client do
   (e.g. `Duffel.OfferRequests`) build on top of this module; most
   applications won't need to call it directly.
 
+  ## Retries and idempotency
+
+  Requests that fail with a 408, 429 or 5xx status, or with a network
+  error, are retried up to three times with a growing delay. This applies
+  to every HTTP method, so each `POST` also carries an `Idempotency-Key`
+  header: Duffel returns the original response for a repeated key instead
+  of creating a second order, payment or card. See `post/4` for how to
+  supply your own key.
+
   ## Telemetry
 
   Every request emits a [`telemetry`](https://hexdocs.pm/telemetry) span
@@ -95,15 +104,30 @@ defmodule Duffel.Client do
   Performs a `POST` request, wrapping `body` in the `data` envelope the
   Duffel API expects.
 
+  Every `POST` carries an `Idempotency-Key` header. One is generated
+  unless you pass your own, so the automatic retries of a failed request
+  cannot create a second order, payment or card. Pass
+  `idempotency_key: nil` to send no key at all.
+
+  Supply your own key when the caller may retry the same logical
+  operation across processes or deploys — a generated key only protects
+  the retries of a single `post/4` call.
+
   ## Options
 
     * `:params` - query string parameters
-    * `:idempotency_key` - sets the `Idempotency-Key` header
+    * `:idempotency_key` - value for the `Idempotency-Key` header. Defaults
+      to a generated key; `nil` sends no header.
 
   """
   @spec post(t(), String.t(), map(), keyword()) :: response()
   def post(%__MODULE__{} = client, path, body, opts \\ []) do
-    request(client, :post, path, Keyword.put(opts, :json, %{data: body}))
+    opts =
+      opts
+      |> Keyword.put_new_lazy(:idempotency_key, &generate_idempotency_key/0)
+      |> Keyword.put(:json, %{data: body})
+
+    request(client, :post, path, opts)
   end
 
   @doc """
@@ -210,6 +234,12 @@ defmodule Duffel.Client do
 
       {result, stop_metadata}
     end)
+  end
+
+  # Failed requests are retried automatically, including POSTs, so every POST
+  # gets a key to stop a retry booking twice.
+  defp generate_idempotency_key do
+    24 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false)
   end
 
   defp response_status({:ok, %Req.Response{status: status}}), do: status

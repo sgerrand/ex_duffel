@@ -12,12 +12,16 @@ defmodule Duffel.Orders do
   @doc """
   Creates an order from a selected offer.
 
-  Pass `:idempotency_key` to guard against duplicate bookings on retries.
   Build the params by hand or with `Duffel.Orders.CreateParams`.
+
+  A generated `Idempotency-Key` stops the automatic retry of a failed
+  request booking twice. Pass your own key when your application may
+  retry the same booking itself, so the second attempt reuses it.
 
   ## Options
 
-    * `:idempotency_key` - sets the `Idempotency-Key` header
+    * `:idempotency_key` - value for the `Idempotency-Key` header. A key is
+      generated when you do not pass one (see `Duffel.Client.post/4`).
 
   ## Examples
 

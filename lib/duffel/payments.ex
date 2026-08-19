@@ -14,7 +14,8 @@ defmodule Duffel.Payments do
 
   ## Options
 
-    * `:idempotency_key` - sets the `Idempotency-Key` header
+    * `:idempotency_key` - value for the `Idempotency-Key` header. A key is
+      generated when you do not pass one (see `Duffel.Client.post/4`).
 
   ## Examples
 

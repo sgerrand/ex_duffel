@@ -33,6 +33,81 @@ defmodule Duffel.ClientTest do
       assert {:ok, _} =
                Client.post(client(), "/air/orders", %{}, idempotency_key: "key-123")
     end
+
+    test "generates an idempotency key for posts without one" do
+      stub(fn conn ->
+        assert [key] = Plug.Conn.get_req_header(conn, "idempotency-key")
+        assert byte_size(key) >= 32
+        Req.Test.json(conn, %{"data" => %{}})
+      end)
+
+      assert {:ok, _} = Client.post(client(), "/air/orders", %{})
+    end
+
+    test "generates a different key for each post" do
+      test_pid = self()
+
+      stub(fn conn ->
+        [key] = Plug.Conn.get_req_header(conn, "idempotency-key")
+        send(test_pid, {:key, key})
+        Req.Test.json(conn, %{"data" => %{}})
+      end)
+
+      assert {:ok, _} = Client.post(client(), "/air/orders", %{})
+      assert {:ok, _} = Client.post(client(), "/air/orders", %{})
+
+      assert_received {:key, first}
+      assert_received {:key, second}
+      assert first != second
+    end
+
+    test "sends no idempotency key when it is nil" do
+      stub(fn conn ->
+        assert Plug.Conn.get_req_header(conn, "idempotency-key") == []
+        Req.Test.json(conn, %{"data" => %{}})
+      end)
+
+      assert {:ok, _} = Client.post(client(), "/air/orders", %{}, idempotency_key: nil)
+    end
+
+    test "does not send an idempotency key on reads" do
+      stub(fn conn ->
+        assert Plug.Conn.get_req_header(conn, "idempotency-key") == []
+        Req.Test.json(conn, %{"data" => %{}})
+      end)
+
+      assert {:ok, _} = Client.get(client(), "/air/orders")
+    end
+
+    test "reuses the same idempotency key when a post is retried" do
+      test_pid = self()
+
+      stub(fn conn ->
+        [key] = Plug.Conn.get_req_header(conn, "idempotency-key")
+        send(test_pid, {:key, key})
+
+        case Process.get(:attempts, 0) do
+          0 ->
+            Process.put(:attempts, 1)
+            conn |> Plug.Conn.put_status(500) |> Req.Test.json(%{"errors" => []})
+
+          _retried ->
+            Req.Test.json(conn, %{"data" => %{"id" => "ord_1"}})
+        end
+      end)
+
+      retrying_client =
+        Duffel.new(
+          access_token: "duffel_test_abc",
+          req_options: [plug: {Req.Test, __MODULE__}, retry_delay: 0, retry_log_level: false]
+        )
+
+      assert {:ok, %{"data" => %{"id" => "ord_1"}}} =
+               Client.post(retrying_client, "/air/orders", %{})
+
+      assert_received {:key, key}
+      assert_received {:key, ^key}
+    end
   end
 
   describe "post/4" do
