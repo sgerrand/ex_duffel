@@ -27,9 +27,7 @@ defmodule Duffel.Payments do
   """
   @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
-    with {:ok, %{"data" => data}} <- Client.post(client, @path, params, opts) do
-      {:ok, data}
-    end
+    client |> Client.post(@path, params, opts) |> Client.unwrap()
   end
 
   @doc """
@@ -37,9 +35,7 @@ defmodule Duffel.Payments do
   """
   @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
-    with {:ok, %{"data" => data}} <- Client.get(client, "#{@path}/#{id}") do
-      {:ok, data}
-    end
+    client |> Client.get("#{@path}/#{id}") |> Client.unwrap()
   end
 
   @doc """

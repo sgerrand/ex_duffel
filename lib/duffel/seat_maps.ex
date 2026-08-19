@@ -25,8 +25,6 @@ defmodule Duffel.SeatMaps do
   """
   @spec list(Client.t(), keyword() | map()) :: {:ok, [map()]} | {:error, Error.t()}
   def list(client, params) do
-    with {:ok, %{"data" => data}} <- Client.get(client, @path, params: Map.new(params)) do
-      {:ok, data}
-    end
+    client |> Client.get(@path, params: Map.new(params)) |> Client.unwrap()
   end
 end

@@ -41,9 +41,7 @@ defmodule Duffel.Cards do
   def create(client, params, opts \\ []) do
     opts = Keyword.put_new(opts, :base_url, client.cards_base_url)
 
-    with {:ok, %{"data" => data}} <- Client.post(client, @path, params, opts) do
-      {:ok, data}
-    end
+    client |> Client.post(@path, params, opts) |> Client.unwrap()
   end
 
   @doc """

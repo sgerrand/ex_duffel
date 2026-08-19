@@ -14,9 +14,7 @@ defmodule Duffel.Stays.Chains do
   """
   @spec list(Client.t()) :: {:ok, [map()]} | {:error, Error.t()}
   def list(client) do
-    with {:ok, %{"data" => data}} <- Client.get(client, @path) do
-      {:ok, data}
-    end
+    client |> Client.get(@path) |> Client.unwrap()
   end
 
   @doc """
@@ -24,8 +22,6 @@ defmodule Duffel.Stays.Chains do
   """
   @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
-    with {:ok, %{"data" => data}} <- Client.get(client, "#{@path}/#{id}") do
-      {:ok, data}
-    end
+    client |> Client.get("#{@path}/#{id}") |> Client.unwrap()
   end
 end

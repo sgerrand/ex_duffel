@@ -43,8 +43,6 @@ defmodule Duffel.OrderChangeOffers do
   """
   @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
-    with {:ok, %{"data" => data}} <- Client.get(client, "#{@path}/#{id}") do
-      {:ok, data}
-    end
+    client |> Client.get("#{@path}/#{id}") |> Client.unwrap()
   end
 end

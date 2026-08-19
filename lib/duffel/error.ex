@@ -28,6 +28,13 @@ defmodule Duffel.Error do
   failure, timeout — `:type` is `:transport_error` and `:status` is `nil`.
   The underlying exception, usually a `Req.TransportError`, is kept under
   `:reason` for when you need to tell those cases apart.
+
+  ## Unexpected responses
+
+  Duffel wraps every resource in a `data` envelope. A success response
+  without one means the endpoint returned something this library does not
+  know how to read, so `:type` is `:unexpected_response` and the body is
+  kept under `:reason`.
   """
 
   @known_types ~w(
@@ -62,7 +69,7 @@ defmodule Duffel.Error do
           source: map() | nil,
           request_id: String.t() | nil,
           status: pos_integer() | nil,
-          reason: Exception.t() | nil,
+          reason: term(),
           errors: [map()]
         }
 
@@ -100,6 +107,17 @@ defmodule Duffel.Error do
       request_id: request_id,
       status: status,
       errors: errors
+    }
+  end
+
+  @doc false
+  @spec unexpected_response(term()) :: t()
+  def unexpected_response(body) do
+    %__MODULE__{
+      type: :unexpected_response,
+      title: "Unexpected response",
+      message: ~s(the response body has no "data" key),
+      reason: body
     }
   end
 

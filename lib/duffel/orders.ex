@@ -50,9 +50,7 @@ defmodule Duffel.Orders do
   """
   @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
-    with {:ok, %{"data" => data}} <- Client.post(client, @path, params, opts) do
-      {:ok, data}
-    end
+    client |> Client.post(@path, params, opts) |> Client.unwrap()
   end
 
   @doc """
@@ -60,9 +58,7 @@ defmodule Duffel.Orders do
   """
   @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id) when is_binary(id) do
-    with {:ok, %{"data" => data}} <- Client.get(client, "#{@path}/#{id}") do
-      {:ok, data}
-    end
+    client |> Client.get("#{@path}/#{id}") |> Client.unwrap()
   end
 
   @doc """
@@ -104,9 +100,7 @@ defmodule Duffel.Orders do
   """
   @spec update(Client.t(), String.t(), map()) :: {:ok, map()} | {:error, Error.t()}
   def update(client, id, params) when is_binary(id) do
-    with {:ok, %{"data" => data}} <- Client.patch(client, "#{@path}/#{id}", params) do
-      {:ok, data}
-    end
+    client |> Client.patch("#{@path}/#{id}", params) |> Client.unwrap()
   end
 
   @doc """
@@ -115,10 +109,7 @@ defmodule Duffel.Orders do
   """
   @spec price(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
   def price(client, id) when is_binary(id) do
-    with {:ok, %{"data" => data}} <-
-           Client.post(client, "#{@path}/#{id}/actions/price", %{}) do
-      {:ok, data}
-    end
+    client |> Client.post("#{@path}/#{id}/actions/price", %{}) |> Client.unwrap()
   end
 
   @doc """
@@ -126,10 +117,7 @@ defmodule Duffel.Orders do
   """
   @spec available_services(Client.t(), String.t()) :: {:ok, [map()]} | {:error, Error.t()}
   def available_services(client, id) when is_binary(id) do
-    with {:ok, %{"data" => data}} <-
-           Client.get(client, "#{@path}/#{id}/available_services") do
-      {:ok, data}
-    end
+    client |> Client.get("#{@path}/#{id}/available_services") |> Client.unwrap()
   end
 
   @doc """
@@ -146,9 +134,6 @@ defmodule Duffel.Orders do
   @spec add_services(Client.t(), String.t(), map(), keyword()) ::
           {:ok, map()} | {:error, Error.t()}
   def add_services(client, id, params, opts \\ []) when is_binary(id) do
-    with {:ok, %{"data" => data}} <-
-           Client.post(client, "#{@path}/#{id}/services", params, opts) do
-      {:ok, data}
-    end
+    client |> Client.post("#{@path}/#{id}/services", params, opts) |> Client.unwrap()
   end
 end

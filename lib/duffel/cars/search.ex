@@ -33,8 +33,6 @@ defmodule Duffel.Cars.Search do
   """
   @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
-    with {:ok, %{"data" => data}} <- Client.post(client, "/cars/search", params, opts) do
-      {:ok, data}
-    end
+    client |> Client.post("/cars/search", params, opts) |> Client.unwrap()
   end
 end

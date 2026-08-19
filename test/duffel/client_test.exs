@@ -139,6 +139,36 @@ defmodule Duffel.ClientTest do
     end
   end
 
+  describe "unwrap/1" do
+    test "takes the resource out of the data envelope" do
+      assert Client.unwrap({:ok, %{"data" => %{"id" => "ord_1"}}}) == {:ok, %{"id" => "ord_1"}}
+    end
+
+    test "errors on a success response with no data key" do
+      assert {:error, %Error{} = error} = Client.unwrap({:ok, %{"meta" => %{"limit" => 50}}})
+      assert error.type == :unexpected_response
+      assert error.status == nil
+      assert error.reason == %{"meta" => %{"limit" => 50}}
+      assert Exception.message(error) =~ ~s(no "data" key)
+    end
+
+    test "errors on an empty success body" do
+      assert {:error, %Error{type: :unexpected_response}} = Client.unwrap({:ok, ""})
+    end
+
+    test "passes errors through untouched" do
+      error = {:error, %Error{type: :api_error}}
+      assert Client.unwrap(error) == error
+    end
+
+    test "a resource returns the error when the envelope is missing" do
+      stub(fn conn -> Req.Test.json(conn, %{"meta" => %{}}) end)
+
+      assert {:error, %Error{type: :unexpected_response}} =
+               Duffel.Orders.get(client(), "ord_1")
+    end
+  end
+
   describe "error handling" do
     test "parses a Duffel error response" do
       stub(fn conn ->

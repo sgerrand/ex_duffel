@@ -175,6 +175,25 @@ defmodule Duffel.Client do
   end
 
   @doc """
+  Takes the resource out of the `data` envelope Duffel wraps it in.
+
+  Resource modules pipe every request through this, so a success response
+  with no `data` key becomes an `:unexpected_response` error instead of
+  being handed back as if the envelope were the resource. Errors pass
+  through untouched.
+
+  ## Examples
+
+      client |> get("/air/orders/ord_123") |> unwrap()
+      #=> {:ok, %{"id" => "ord_123", ...}}
+
+  """
+  @spec unwrap(response()) :: {:ok, term()} | {:error, Error.t()}
+  def unwrap({:ok, %{"data" => data}}), do: {:ok, data}
+  def unwrap({:ok, body}), do: {:error, Error.unexpected_response(body)}
+  def unwrap({:error, %Error{}} = error), do: error
+
+  @doc """
   Performs a `GET` request against a list endpoint and wraps the result
   in a `Duffel.Page`.
   """
