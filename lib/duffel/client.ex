@@ -14,6 +14,17 @@ defmodule Duffel.Client do
   connection or timeout failure becomes an error with `type:
   :transport_error` and the original exception under `:reason`.
 
+  ## Timeouts
+
+  A request waits 30 seconds for a response before giving up, which leaves
+  room for the 20 seconds Duffel gives each airline to answer a search by
+  default. Raise `:receive_timeout` on the client when you
+  raise `supplier_timeout`, which Duffel allows up to 60 seconds:
+
+      Duffel.new(access_token: token, receive_timeout: 90_000)
+
+  A timeout is a transient failure, so it is retried like any other.
+
   ## Retries and idempotency
 
   Requests that fail with a 408, 429 or 5xx status, or with a network
@@ -56,6 +67,10 @@ defmodule Duffel.Client do
   @cards_base_url "https://api.duffel.cards"
   @api_version "v2"
 
+  # Req waits 15s by default, which is less than the 20s Duffel gives each
+  # airline to answer a search, so a plain offer request could not finish.
+  @receive_timeout 30_000
+
   # The client is passed to every resource function, so it shows up in stack
   # traces, crash reports and error trackers. Keep the token out of them.
   @derive {Inspect, except: [:access_token]}
@@ -63,6 +78,7 @@ defmodule Duffel.Client do
             base_url: @base_url,
             cards_base_url: @cards_base_url,
             api_version: @api_version,
+            receive_timeout: @receive_timeout,
             req_options: []
 
   @type t :: %__MODULE__{
@@ -70,6 +86,7 @@ defmodule Duffel.Client do
           base_url: String.t(),
           cards_base_url: String.t(),
           api_version: String.t(),
+          receive_timeout: timeout(),
           req_options: keyword()
         }
 
@@ -103,6 +120,7 @@ defmodule Duffel.Client do
       base_url: Keyword.get(opts, :base_url, @base_url),
       cards_base_url: Keyword.get(opts, :cards_base_url, @cards_base_url),
       api_version: Keyword.get(opts, :api_version, @api_version),
+      receive_timeout: Keyword.get(opts, :receive_timeout, @receive_timeout),
       req_options: Keyword.get(opts, :req_options, [])
     }
   end
@@ -317,6 +335,7 @@ defmodule Duffel.Client do
         auth: {:bearer, client.access_token},
         headers: headers,
         compressed: true,
+        receive_timeout: client.receive_timeout,
         retry: :transient
       ]
       |> Keyword.merge(Keyword.take(opts, [:json]))

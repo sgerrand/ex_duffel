@@ -26,8 +26,10 @@ defmodule Duffel do
     * `:access_token` - Duffel API access token (required)
     * `:base_url` - defaults to `"https://api.duffel.com"`
     * `:api_version` - value for the `Duffel-Version` header, defaults to `"v2"`
+    * `:receive_timeout` - milliseconds to wait for a response, defaults to
+      `30_000`. Raise it when you raise Duffel's `supplier_timeout`
     * `:req_options` - extra options merged into every `Req` request
-      (useful for timeouts or test stubs)
+      (useful for test stubs). Merged last, so it overrides everything above
 
   """
 

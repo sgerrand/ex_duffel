@@ -1,3 +1,13 @@
+defmodule Duffel.ClientTest.CaptureAdapter do
+  @moduledoc false
+  # Answers without a network round trip, reporting back the options Req was
+  # given. Runs in the calling process, so the test receives the message.
+  def run(request) do
+    send(self(), {:options, request.options})
+    {request, Req.Response.new(status: 200, body: %{"data" => %{}})}
+  end
+end
+
 defmodule Duffel.ClientTest do
   use ExUnit.Case, async: true
 
@@ -21,6 +31,11 @@ defmodule Duffel.ClientTest do
       refute inspected =~ "duffel_live_secret"
       refute inspected =~ "access_token"
       assert inspected =~ "https://api.duffel.com"
+    end
+
+    test "waits longer than Duffel gives the airlines by default" do
+      assert client().receive_timeout == 30_000
+      assert Duffel.new(access_token: "t", receive_timeout: 90_000).receive_timeout == 90_000
     end
 
     test "keeps the access token readable on the struct" do
@@ -152,6 +167,34 @@ defmodule Duffel.ClientTest do
 
       assert {:ok, %{"data" => %{"id" => "orq_1"}}} =
                Client.post(client(), "/air/offer_requests", %{cabin_class: "economy"})
+    end
+  end
+
+  describe "receive timeout" do
+    defp capturing_client(opts, req_options \\ []) do
+      req_options = Keyword.put(req_options, :adapter, Duffel.ClientTest.CaptureAdapter)
+
+      Duffel.new(Keyword.put(opts, :req_options, req_options))
+    end
+
+    test "reaches Req" do
+      assert {:ok, _} = Client.get(capturing_client(access_token: "t"), "/air/orders")
+      assert_received {:options, %{receive_timeout: 30_000}}
+    end
+
+    test "can be raised on the client" do
+      client = capturing_client(access_token: "t", receive_timeout: 90_000)
+
+      assert {:ok, _} = Client.get(client, "/air/orders")
+      assert_received {:options, %{receive_timeout: 90_000}}
+    end
+
+    test "is still overridden by req_options" do
+      client =
+        capturing_client([access_token: "t", receive_timeout: 90_000], receive_timeout: 1_000)
+
+      assert {:ok, _} = Client.get(client, "/air/orders")
+      assert_received {:options, %{receive_timeout: 1_000}}
     end
   end
 
