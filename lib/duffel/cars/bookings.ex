@@ -23,9 +23,14 @@ defmodule Duffel.Cars.Bookings do
         client,
         %{
           quote_id: "quo_123",
-          driver: %{given_name: "Amelia", family_name: "Earhart"},
-          email: "amelia@duffel.com",
-          phone_number: "+442080160508"
+          driver: %{
+            given_name: "Amelia",
+            family_name: "Earhart",
+            email: "amelia@duffel.com",
+            phone_number: "+442080160508",
+            date_of_birth: "1897-07-24"
+          },
+          supplier_loyalty_programme_account_number: "12901014"
         },
         idempotency_key: "car-booking-1"
       )

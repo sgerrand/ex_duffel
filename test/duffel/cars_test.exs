@@ -19,12 +19,15 @@ defmodule Duffel.CarsTest do
         assert conn.request_path == "/cars/search"
 
         {:ok, body, conn} = Plug.Conn.read_body(conn)
-        assert %{"data" => %{"driver_age" => 30}} = Jason.decode!(body)
+
+        assert %{"data" => %{"driver" => %{"age" => 30, "residence_country_code" => "GB"}}} =
+                 Jason.decode!(body)
 
         Req.Test.json(conn, %{"data" => %{"id" => "csr_1", "rates" => []}})
       end)
 
-      assert {:ok, %{"id" => "csr_1"}} = Search.create(client(), %{driver_age: 30})
+      assert {:ok, %{"id" => "csr_1"}} =
+               Search.create(client(), %{driver: %{age: 30, residence_country_code: "GB"}})
     end
   end
 
