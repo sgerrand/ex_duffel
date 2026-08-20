@@ -1,9 +1,9 @@
 defmodule Duffel.BatchOfferRequests do
   @moduledoc """
   Batched flight search: create returns immediately with `total_batches`;
-  poll `get/2` to receive offers batch by batch as airlines respond.
+  poll `get/3` to receive offers batch by batch as airlines respond.
 
-  `get/2` long-polls until the next batch is available or all batches
+  `get/3` long-polls until the next batch is available or all batches
   have been returned.
 
   See the [Duffel documentation](https://duffel.com/docs/api/v2/batch-offer-requests).
@@ -32,9 +32,21 @@ defmodule Duffel.BatchOfferRequests do
   Long-polls for the next batch of offers.
 
   Call repeatedly until `remaining_batches` reaches zero.
+
+  ## Options
+
+    * `:params` - query string parameters. `view: "itineraries"` groups the
+      offers into slices, itineraries and brands with shared airlines,
+      places and aircraft in top-level reference maps, instead of the flat
+      list of offers `view: "offers"` (the default) returns
+
+  ## Examples
+
+      Duffel.BatchOfferRequests.get(client, "brq_123", params: [view: "itineraries"])
+
   """
-  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
-  def get(client, id) when is_binary(id) do
-    Client.get_data(client, "#{@path}/#{id}")
+  @spec get(Client.t(), String.t(), keyword()) :: {:ok, map()} | {:error, Error.t()}
+  def get(client, id, opts \\ []) when is_binary(id) do
+    Client.get_data(client, "#{@path}/#{id}", opts)
   end
 end

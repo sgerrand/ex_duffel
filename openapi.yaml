@@ -166,6 +166,16 @@ paths:
       tags: [Offer Requests]
       operationId: getOfferRequest
       summary: Get a single offer request
+      parameters:
+        - name: view
+          in: query
+          schema:
+            type: string
+            enum: [offers, itineraries]
+            default: offers
+          description: >-
+            Response format. `itineraries` groups offers into slices,
+            itineraries and brands with top-level reference maps.
       responses:
         "200":
           description: The offer request
@@ -351,6 +361,16 @@ paths:
       description: >
         Long-polls until the next batch of offers is available or all batches
         are returned.
+      parameters:
+        - name: view
+          in: query
+          schema:
+            type: string
+            enum: [offers, itineraries]
+            default: offers
+          description: >-
+            Response format. `itineraries` groups offers into slices,
+            itineraries and brands with top-level reference maps.
       responses:
         "200":
           description: The next batch of offers

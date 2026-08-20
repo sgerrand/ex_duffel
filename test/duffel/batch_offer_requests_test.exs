@@ -27,7 +27,18 @@ defmodule Duffel.BatchOfferRequestsTest do
              BatchOfferRequests.create(client(), %{cabin_class: "economy"})
   end
 
-  test "get/2 polls for the next batch" do
+  test "get/3 sends the view parameter" do
+    stub(fn conn ->
+      assert conn.request_path == "/air/batch_offer_requests/orq_1"
+      assert conn.query_params["view"] == "itineraries"
+      Req.Test.json(conn, %{"data" => %{"id" => "orq_1", "remaining_batches" => 0}})
+    end)
+
+    assert {:ok, %{"remaining_batches" => 0}} =
+             BatchOfferRequests.get(client(), "orq_1", params: [view: "itineraries"])
+  end
+
+  test "get/3 polls for the next batch" do
     stub(fn conn ->
       assert conn.method == "GET"
       assert conn.request_path == "/air/batch_offer_requests/orq_1"

@@ -43,10 +43,22 @@ defmodule Duffel.OfferRequests do
 
   @doc """
   Retrieves a single offer request by ID.
+
+  ## Options
+
+    * `:params` - query string parameters. `view: "itineraries"` groups the
+      offers into slices, itineraries and brands with shared airlines,
+      places and aircraft in top-level reference maps, instead of the flat
+      list of offers `view: "offers"` (the default) returns
+
+  ## Examples
+
+      Duffel.OfferRequests.get(client, "orq_123", params: [view: "itineraries"])
+
   """
-  @spec get(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
-  def get(client, id) when is_binary(id) do
-    Client.get_data(client, "#{@path}/#{id}")
+  @spec get(Client.t(), String.t(), keyword()) :: {:ok, map()} | {:error, Error.t()}
+  def get(client, id, opts \\ []) when is_binary(id) do
+    Client.get_data(client, "#{@path}/#{id}", opts)
   end
 
   @doc """

@@ -49,7 +49,7 @@ defmodule Duffel.OfferRequestsTest do
     end
   end
 
-  describe "get/2" do
+  describe "get/3" do
     test "fetches a single offer request" do
       stub(fn conn ->
         assert conn.method == "GET"
@@ -58,6 +58,17 @@ defmodule Duffel.OfferRequestsTest do
       end)
 
       assert {:ok, %{"id" => "orq_1"}} = OfferRequests.get(client(), "orq_1")
+    end
+
+    test "sends the view parameter" do
+      stub(fn conn ->
+        assert conn.request_path == "/air/offer_requests/orq_1"
+        assert conn.query_params["view"] == "itineraries"
+        Req.Test.json(conn, %{"data" => %{"id" => "orq_1"}})
+      end)
+
+      assert {:ok, %{"id" => "orq_1"}} =
+               OfferRequests.get(client(), "orq_1", params: [view: "itineraries"])
     end
   end
 
