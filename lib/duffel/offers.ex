@@ -82,6 +82,24 @@ defmodule Duffel.Offers do
   end
 
   @doc """
+  Lists the upsell offers the airline has for the same journey as `id`.
+
+  Upsell offers cover higher fare brands and cabins for the itinerary the
+  customer already picked, sorted cheapest first. Each one books like any
+  other offer. Errors if the offer has expired or been booked, or if the
+  airline does not support upselling.
+
+  ## Examples
+
+      Duffel.Offers.upsells(client, "off_123")
+
+  """
+  @spec upsells(Client.t(), String.t()) :: {:ok, [map()]} | {:error, Error.t()}
+  def upsells(client, id) when is_binary(id) do
+    Client.post_data(client, "#{@path}/#{id}/upsell_offers", %{})
+  end
+
+  @doc """
   Updates a passenger on an offer, e.g. to add loyalty programme accounts.
 
   ## Examples

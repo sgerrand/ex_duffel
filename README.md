@@ -281,7 +281,7 @@ than 5 minutes (configurable via `:tolerance`).
 | `Duffel.OfferRequests.SearchParams` | Build a flight search request |
 | `Duffel.PartialOfferRequests` | Multi-step (per-slice) search |
 | `Duffel.BatchOfferRequests` | Batched search with polling |
-| `Duffel.Offers` | Offers returned by a search, re-pricing |
+| `Duffel.Offers` | Offers returned by a search, re-pricing, upsells |
 | `Duffel.SeatMaps` | Seat maps for an offer |
 | `Duffel.Orders` | Bookings, services, metadata, re-pricing |
 | `Duffel.Orders.CreateParams` | Build an order request |

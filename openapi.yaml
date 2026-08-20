@@ -466,6 +466,36 @@ paths:
                     $ref: "#/components/schemas/Offer"
         default:
           $ref: "#/components/responses/Error"
+  /air/offers/{id}/upsell_offers:
+    parameters:
+      - $ref: "#/components/parameters/DuffelVersion"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [Offers]
+      operationId: getUpsellOffers
+      summary: Get upsell offers for an offer
+      description: >-
+        Returns the upsell offers the airline has for the same journey as the
+        given offer, covering higher fare brands and cabins, sorted by price
+        ascending.
+      responses:
+        "200":
+          description: The upsell offers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Offer"
+        default:
+          $ref: "#/components/responses/Error"
   /air/offers/{offer_id}/passengers/{offer_passenger_id}:
     parameters:
       - $ref: "#/components/parameters/DuffelVersion"

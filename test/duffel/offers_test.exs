@@ -115,6 +115,24 @@ defmodule Duffel.OffersTest do
     end
   end
 
+  describe "upsells/2" do
+    test "posts to the upsell offers action" do
+      stub(fn conn ->
+        assert conn.method == "POST"
+        assert conn.request_path == "/air/offers/off_1/upsell_offers"
+
+        Req.Test.json(conn, %{
+          "data" => [
+            %{"id" => "off_2", "total_amount" => "80.00"},
+            %{"id" => "off_3", "total_amount" => "95.00"}
+          ]
+        })
+      end)
+
+      assert {:ok, [%{"id" => "off_2"}, %{"id" => "off_3"}]} = Offers.upsells(client(), "off_1")
+    end
+  end
+
   describe "update_passenger/4" do
     test "patches the offer passenger" do
       stub(fn conn ->
