@@ -67,12 +67,19 @@ defmodule Duffel.Orders do
   ## Parameters
 
     * `:booking_reference` - filter by airline booking reference (PNR)
+    * `:offer_id` - filter by the offer the order was created from
+    * `:user_id` - filter by the customer user on the order
     * `:awaiting_payment` - filter hold orders awaiting payment (boolean)
     * `:requires_action` - orders with unactioned airline-initiated changes
     * `"passenger_name[]"` - filter by passenger name. Pass a list to filter
       on several: `%{"passenger_name[]" => ["Amelia", "Earhart"]}`
-    * `:sort` - `"payment_required_by"`, `"created_at"` or
-      `"next_departure"`, prefix with `-` for descending
+    * `"owner_id[]"` / `"origin_id[]"` / `"destination_id[]"` - filter by
+      airline, origin or destination. Each takes a list, like
+      `"passenger_name[]"`
+    * `:departing_at` / `:arriving_at` / `:created_at` - filter on a
+      datetime range, e.g. `created_at: %{after: "2026-07-01T00:00:00Z"}`
+    * `:sort` - `"payment_required_by"`, `"total_amount"`, `"created_at"`
+      or `"next_departure"`, prefix with `-` for descending
     * `:limit` / `:after` / `:before` - pagination (see `Duffel.Page`)
   """
   @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, Error.t()}
@@ -92,11 +99,13 @@ defmodule Duffel.Orders do
   end
 
   @doc """
-  Updates a single order. Only `metadata` is updatable.
+  Updates a single order. Only `metadata` and `users` are updatable.
 
   ## Examples
 
       Duffel.Orders.update(client, "ord_123", %{metadata: %{customer_id: "123"}})
+
+      Duffel.Orders.update(client, "ord_123", %{users: ["icu_123"]})
 
   """
   @spec update(Client.t(), String.t(), map()) :: {:ok, map()} | {:error, Error.t()}

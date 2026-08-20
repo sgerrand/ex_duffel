@@ -49,6 +49,7 @@ defmodule Duffel.Stays.Bookings do
 
   ## Parameters
 
+    * `:user_id` - filter by the customer user on the booking
     * `:limit` / `:after` / `:before` - pagination (see `Duffel.Page`)
 
   """

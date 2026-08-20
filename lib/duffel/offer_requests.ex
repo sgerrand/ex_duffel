@@ -20,7 +20,12 @@ defmodule Duffel.OfferRequests do
   ## Options
 
     * `:params` - query string parameters, e.g.
-      `params: [return_offers: false, supplier_timeout: 10_000]`
+      `params: [return_offers: false, supplier_timeout: 10_000]`.
+      `return_offers: false` leaves the offers out of the response, to be
+      listed with `Duffel.Offers.list/2`; `supplier_timeout` is how long
+      in milliseconds to wait for each airline, 2_000..60_000 (default
+      20_000); `view: "itineraries"` returns the grouped shape described
+      in `get/3`
 
   ## Examples
 

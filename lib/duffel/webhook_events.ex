@@ -14,6 +14,10 @@ defmodule Duffel.WebhookEvents do
 
   ## Parameters
 
+    * `:type` - filter by event type, e.g. `"order.created"`
+    * `:delivery_success` - filter by whether delivery succeeded (boolean)
+    * `:created_at` - filter on a datetime range, e.g.
+      `created_at: %{after: "2026-07-01T00:00:00Z"}`
     * `:limit` / `:after` / `:before` - pagination (see `Duffel.Page`)
 
   """
