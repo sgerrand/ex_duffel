@@ -209,8 +209,11 @@ end
 A transport error has `status: nil` and keeps the underlying exception,
 usually a `Req.TransportError`, under `reason`.
 
-Rate-limited (429) and transient server errors are retried automatically
-with backoff, honouring `retry-after`. When a response reports your
+Failures Duffel calls retryable — 408, 429, 503 and network errors — are
+retried automatically with backoff, honouring `retry-after`. 500 and 502
+are not, because Duffel documents them as "you should not retry this
+request", and a 504 is retried only on a read, never on a `POST` that
+could book twice. When a response reports your
 remaining allowance, `Duffel.RateLimit` carries it — on the error, and on
 every `[:duffel, :request, :stop]` telemetry event, so you can slow down
 before Duffel starts refusing requests:

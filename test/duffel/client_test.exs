@@ -120,7 +120,7 @@ defmodule Duffel.ClientTest do
         case Process.get(:attempts, 0) do
           0 ->
             Process.put(:attempts, 1)
-            conn |> Plug.Conn.put_status(500) |> Req.Test.json(%{"errors" => []})
+            conn |> Plug.Conn.put_status(503) |> Req.Test.json(%{"errors" => []})
 
           _retried ->
             Req.Test.json(conn, %{"data" => %{"id" => "ord_1"}})
@@ -138,6 +138,79 @@ defmodule Duffel.ClientTest do
 
       assert_received {:key, key}
       assert_received {:key, ^key}
+    end
+  end
+
+  describe "retries" do
+    defp retrying_client do
+      Duffel.new(
+        access_token: "duffel_test_abc",
+        req_options: [plug: {Req.Test, __MODULE__}, retry_delay: 0, retry_log_level: false]
+      )
+    end
+
+    defp counting_stub(status) do
+      test_pid = self()
+
+      stub(fn conn ->
+        attempts = Process.get(:attempts, 0)
+        Process.put(:attempts, attempts + 1)
+        send(test_pid, :attempt)
+
+        if attempts == 0 do
+          conn |> Plug.Conn.put_status(status) |> Req.Test.json(%{"errors" => []})
+        else
+          Req.Test.json(conn, %{"data" => %{"id" => "ord_1"}})
+        end
+      end)
+    end
+
+    defp attempts do
+      receive do
+        :attempt -> 1 + attempts()
+      after
+        0 -> 0
+      end
+    end
+
+    for status <- [408, 429, 503] do
+      test "retries a #{status}" do
+        counting_stub(unquote(status))
+
+        assert {:ok, %{"data" => %{"id" => "ord_1"}}} =
+                 Client.post(retrying_client(), "/air/orders", %{})
+
+        assert attempts() == 2
+      end
+    end
+
+    for status <- [500, 502] do
+      test "does not retry a #{status}, which Duffel documents as not retryable" do
+        counting_stub(unquote(status))
+
+        assert {:error, %Duffel.Error{status: unquote(status)}} =
+                 Client.post(retrying_client(), "/air/orders", %{})
+
+        assert attempts() == 1
+      end
+    end
+
+    test "retries a 504 on a read" do
+      counting_stub(504)
+
+      assert {:ok, %{"data" => %{"id" => "ord_1"}}} =
+               Client.get(retrying_client(), "/air/orders/ord_1")
+
+      assert attempts() == 2
+    end
+
+    test "does not retry a 504 on a post, which may have been processed" do
+      counting_stub(504)
+
+      assert {:error, %Duffel.Error{status: 504}} =
+               Client.post(retrying_client(), "/air/orders", %{})
+
+      assert attempts() == 1
     end
   end
 

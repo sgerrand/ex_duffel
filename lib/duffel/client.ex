@@ -29,12 +29,17 @@ defmodule Duffel.Client do
 
   ## Retries and idempotency
 
-  Requests that fail with a 408, 429 or 5xx status, or with a network
-  error, are retried up to three times with a growing delay. This applies
-  to every HTTP method, so each `POST` also carries an `Idempotency-Key`
-  header: Duffel returns the original response for a repeated key instead
-  of creating a second order, payment or card. See `post/4` for how to
-  supply your own key.
+  A failed request is retried up to three times with a growing delay, but
+  only when Duffel calls the failure retryable: a 408, 429 or 503, or a
+  network error. Duffel documents 500 and 502 as "you should not retry
+  this request", so neither is. A 504 can mean the supplier processed the
+  request after all, so it is retried for `GET` and `HEAD` only, never for
+  a `POST` that could book twice.
+
+  Retries still apply to every method, so each `POST` also carries an
+  `Idempotency-Key` header. See `post/4` for how to supply your own key.
+
+  Pass your own `retry:` in `:req_options` to replace this policy.
 
   ## Telemetry
 
@@ -346,7 +351,7 @@ defmodule Duffel.Client do
         headers: headers,
         compressed: true,
         receive_timeout: client.receive_timeout,
-        retry: :transient
+        retry: &retry?/2
       ]
       |> Keyword.merge(Keyword.take(opts, [:json]))
       |> Keyword.merge(client.req_options)
@@ -381,6 +386,30 @@ defmodule Duffel.Client do
   end
 
   defp advance(params, cursor), do: Map.put(params, "after", cursor)
+
+  # Duffel documents 500 and 502 as not retryable, so a failing order create
+  # is handed back rather than sent again. 504 may mean the supplier processed
+  # the request, so only safe methods retry it.
+  @retry_statuses [408, 429, 503]
+  @safe_retry_statuses [504]
+  @retry_transport_reasons [:timeout, :econnrefused, :closed]
+  @retry_http2_reasons [:unprocessed, :pool_not_available]
+
+  defp retry?(_request, %Req.Response{status: status}) when status in @retry_statuses, do: true
+
+  defp retry?(%Req.Request{method: method}, %Req.Response{status: status})
+       when status in @safe_retry_statuses and method in [:get, :head],
+       do: true
+
+  defp retry?(_request, %Req.TransportError{reason: reason})
+       when reason in @retry_transport_reasons,
+       do: true
+
+  defp retry?(_request, %Req.HTTPError{protocol: :http2, reason: reason})
+       when reason in @retry_http2_reasons,
+       do: true
+
+  defp retry?(_request, _response_or_exception), do: false
 
   # Duffel takes repeated `key[]` parameters for array filters. Req's `:params`
   # option cannot express those: it keeps only the last value for a repeated
