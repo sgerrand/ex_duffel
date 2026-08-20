@@ -107,10 +107,20 @@ defmodule Duffel.Orders do
   @doc """
   Re-prices an unpaid (hold) order with the airline and returns the
   updated order.
+
+  ## Parameters
+
+    * `:intended_payment_methods` - the payment methods you intend to pay
+      with, e.g. `["card"]`. Prices the order including any card fee
+
+  ## Examples
+
+      Duffel.Orders.price(client, "ord_123", %{intended_payment_methods: ["card"]})
+
   """
-  @spec price(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
-  def price(client, id) when is_binary(id) do
-    Client.post_data(client, "#{@path}/#{id}/actions/price", %{})
+  @spec price(Client.t(), String.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
+  def price(client, id, params \\ %{}, opts \\ []) when is_binary(id) do
+    Client.post_data(client, "#{@path}/#{id}/actions/price", params, opts)
   end
 
   @doc """

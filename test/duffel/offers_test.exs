@@ -78,15 +78,40 @@ defmodule Duffel.OffersTest do
     end
   end
 
-  describe "price/2" do
+  describe "price/4" do
     test "posts to the price action" do
       stub(fn conn ->
         assert conn.method == "POST"
         assert conn.request_path == "/air/offers/off_1/actions/price"
+
+        {:ok, body, conn} = Plug.Conn.read_body(conn)
+        assert %{"data" => %{}} = Jason.decode!(body)
+
         Req.Test.json(conn, %{"data" => %{"id" => "off_1", "total_amount" => "47.00"}})
       end)
 
       assert {:ok, %{"total_amount" => "47.00"}} = Offers.price(client(), "off_1")
+    end
+
+    test "sends the intended payment methods and services" do
+      stub(fn conn ->
+        {:ok, body, conn} = Plug.Conn.read_body(conn)
+
+        assert %{
+                 "data" => %{
+                   "intended_payment_methods" => ["card"],
+                   "intended_services" => [%{"id" => "ase_1", "quantity" => 1}]
+                 }
+               } = Jason.decode!(body)
+
+        Req.Test.json(conn, %{"data" => %{"id" => "off_1", "total_amount" => "49.00"}})
+      end)
+
+      assert {:ok, %{"total_amount" => "49.00"}} =
+               Offers.price(client(), "off_1", %{
+                 intended_payment_methods: ["card"],
+                 intended_services: [%{id: "ase_1", quantity: 1}]
+               })
     end
   end
 

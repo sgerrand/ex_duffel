@@ -60,10 +60,25 @@ defmodule Duffel.Offers do
 
   @doc """
   Re-prices the offer with the airline and returns the updated offer.
+
+  ## Parameters
+
+    * `:intended_payment_methods` - the payment methods you intend to pay
+      with, e.g. `["card"]`. Prices the offer including any card fee
+    * `:intended_services` - the services you intend to book alongside the
+      offer, as `%{id: ..., quantity: ...}` maps
+
+  ## Examples
+
+      Duffel.Offers.price(client, "off_123", %{
+        intended_payment_methods: ["card"],
+        intended_services: [%{id: "ase_123", quantity: 1}]
+      })
+
   """
-  @spec price(Client.t(), String.t()) :: {:ok, map()} | {:error, Error.t()}
-  def price(client, id) when is_binary(id) do
-    Client.post_data(client, "#{@path}/#{id}/actions/price", %{})
+  @spec price(Client.t(), String.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
+  def price(client, id, params \\ %{}, opts \\ []) when is_binary(id) do
+    Client.post_data(client, "#{@path}/#{id}/actions/price", params, opts)
   end
 
   @doc """
