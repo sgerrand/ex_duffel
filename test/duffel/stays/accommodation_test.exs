@@ -13,14 +13,20 @@ defmodule Duffel.Stays.AccommodationTest do
 
   defp stub(fun), do: Req.Test.stub(__MODULE__, fun)
 
-  test "list/1 defaults and stream/2" do
+  test "list/2 and stream/2 send the search area" do
     stub(fn conn ->
       assert conn.request_path == "/stays/accommodation"
+      assert conn.query_params["latitude"] == "51.5074"
+      assert conn.query_params["longitude"] == "-0.1278"
+      assert conn.query_params["radius"] == "10"
       Req.Test.json(conn, %{"data" => [%{"id" => "acc_1"}], "meta" => %{"after" => nil}})
     end)
 
-    assert {:ok, %Page{data: [%{"id" => "acc_1"}]}} = Accommodation.list(client())
-    assert client() |> Accommodation.stream() |> Enum.map(& &1["id"]) == ["acc_1"]
+    params = [latitude: 51.5074, longitude: -0.1278, radius: 10]
+
+    assert {:ok, %Page{data: [%{"id" => "acc_1"}]}} = Accommodation.list(client(), params)
+
+    assert client() |> Accommodation.stream(params) |> Enum.map(& &1["id"]) == ["acc_1"]
   end
 
   test "get/2 fetches accommodation" do

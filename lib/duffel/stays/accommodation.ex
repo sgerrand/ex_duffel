@@ -11,25 +11,33 @@ defmodule Duffel.Stays.Accommodation do
   @path "/stays/accommodation"
 
   @doc """
-  Lists one page of accommodation.
+  Lists one page of accommodation around a point.
 
   ## Parameters
 
+    * `:latitude` - centre of the search, in decimal degrees (required)
+    * `:longitude` - centre of the search, in decimal degrees (required)
+    * `:radius` - how far to search, in kilometres, 1..100 (default 5)
     * `:limit` / `:after` / `:before` - pagination (see `Duffel.Page`)
+
+  ## Examples
+
+      Duffel.Stays.Accommodation.list(client, latitude: 51.5074, longitude: -0.1278)
 
   """
   @spec list(Client.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, Error.t()}
-  def list(client, params \\ []) do
+  def list(client, params) do
     Client.list(client, @path, params)
   end
 
   @doc """
-  Lazily streams all accommodation across pages.
+  Lazily streams all accommodation around a point, across pages.
 
-  Raises `Duffel.Error` if a page request fails.
+  Takes the same parameters as `list/2`. Raises `Duffel.Error` if a page
+  request fails.
   """
   @spec stream(Client.t(), keyword() | map()) :: Enumerable.t()
-  def stream(client, params \\ []) do
+  def stream(client, params) do
     Client.stream(client, @path, params)
   end
 
