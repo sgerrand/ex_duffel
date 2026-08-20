@@ -201,7 +201,8 @@ case Duffel.Orders.create(client, params) do
     retry_later(reason)
 
   {:error, %Duffel.Error{request_id: request_id}} ->
-    # quote request_id when contacting Duffel support
+    # quote request_id when contacting Duffel support. It comes from the
+    # response body, or the x-request-id header when the body has none
     log_and_fail(request_id)
 end
 ```

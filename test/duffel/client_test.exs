@@ -468,6 +468,45 @@ defmodule Duffel.ClientTest do
       assert Exception.message(error) =~ "HTTP 422"
     end
 
+    test "falls back to the x-request-id header when the body carries no id" do
+      stub(fn conn ->
+        conn
+        |> Plug.Conn.put_resp_header("x-request-id", "req_header_1")
+        |> Plug.Conn.put_status(500)
+        |> Req.Test.json(%{"errors" => [%{"type" => "api_error", "title" => "Server error"}]})
+      end)
+
+      assert {:error, %Error{request_id: "req_header_1", type: :api_error}} =
+               Client.get(client(), "/air/orders")
+    end
+
+    test "prefers the request id in the body" do
+      stub(fn conn ->
+        conn
+        |> Plug.Conn.put_resp_header("x-request-id", "req_header_1")
+        |> Plug.Conn.put_status(422)
+        |> Req.Test.json(%{
+          "errors" => [%{"type" => "validation_error"}],
+          "meta" => %{"request_id" => "req_body_1"}
+        })
+      end)
+
+      assert {:error, %Error{request_id: "req_body_1"}} =
+               Client.get(client(), "/air/orders")
+    end
+
+    test "reads the header when the error body is not the documented shape" do
+      stub(fn conn ->
+        conn
+        |> Plug.Conn.put_resp_header("x-request-id", "req_header_2")
+        |> Plug.Conn.put_status(502)
+        |> Req.Test.json(%{"message" => "bad gateway"})
+      end)
+
+      assert {:error, %Error{request_id: "req_header_2", status: 502}} =
+               Client.get(client(), "/air/orders")
+    end
+
     test "maps unknown error types to :unknown_error" do
       stub(fn conn ->
         conn

@@ -17,7 +17,10 @@ defmodule Duffel.Error do
 
   These mirror the [Duffel error schema](https://duffel.com/docs/api/overview/errors).
   The struct fields come from the first error in the response; the full
-  list is under `:errors`, and `:status` holds the HTTP status. `:type` is
+  list is under `:errors`, and `:status` holds the HTTP status.
+  `:request_id` identifies the request to Duffel support, and is read from
+  the response body, or from the `x-request-id` header Duffel sets on
+  every response when the body carries no id. `:type` is
   one of `:airline_error`, `:api_error`, `:authentication_error`,
   `:invalid_request_error`, `:invalid_state_error`, `:rate_limit_error` or
   `:validation_error`. A type Duffel adds later reads as `:unknown_error`.
@@ -106,6 +109,10 @@ defmodule Duffel.Error do
           {[], nil}
       end
 
+    # Duffel sets `x-request-id` on every response, so an error whose body
+    # is missing or is not the documented shape still has one to quote.
+    request_id = request_id || header(response, "x-request-id")
+
     first = List.first(errors) || %{}
 
     %__MODULE__{
@@ -142,6 +149,13 @@ defmodule Duffel.Error do
       message: Exception.message(exception),
       reason: exception
     }
+  end
+
+  defp header(response, name) do
+    case Req.Response.get_header(response, name) do
+      [value | _rest] -> value
+      [] -> nil
+    end
   end
 
   for type <- @known_types do
