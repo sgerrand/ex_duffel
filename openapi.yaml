@@ -4651,6 +4651,22 @@ components:
                 type: string
             fetch_rates:
               type: boolean
+        free_cancellation_only:
+          type: boolean
+          description: Only return rates that can be cancelled for free
+        instant_payment:
+          type: boolean
+          description: >-
+            True returns only rates paid at booking time, false only rates the
+            accommodation collects. Omit for both.
+        mobile:
+          type: boolean
+          description: Whether the search came from a mobile device
+        negotiated_rate_ids:
+          type: array
+          items:
+            type: string
+          description: Negotiated rates to search alongside public rates
     StaysSearchResult:
       type: object
       properties:

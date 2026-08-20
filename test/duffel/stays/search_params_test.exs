@@ -27,6 +27,40 @@ defmodule Duffel.Stays.SearchParamsTest do
              }
     end
 
+    test "passes through the optional filters" do
+      params =
+        SearchParams.new(
+          check_in_date: "2026-07-01",
+          check_out_date: "2026-07-03",
+          guests: [%{type: "adult"}],
+          free_cancellation_only: true,
+          instant_payment: false,
+          mobile: true,
+          negotiated_rate_ids: ["nre_1"]
+        )
+
+      assert %{
+               free_cancellation_only: true,
+               instant_payment: false,
+               mobile: true,
+               negotiated_rate_ids: ["nre_1"]
+             } = params
+    end
+
+    test "omits the optional filters when not given" do
+      params =
+        SearchParams.new(
+          check_in_date: "2026-07-01",
+          check_out_date: "2026-07-03",
+          guests: [%{type: "adult"}]
+        )
+
+      refute Map.has_key?(params, :free_cancellation_only)
+      refute Map.has_key?(params, :instant_payment)
+      refute Map.has_key?(params, :mobile)
+      refute Map.has_key?(params, :negotiated_rate_ids)
+    end
+
     test "omits location and accommodation when not given and honours rooms" do
       params =
         SearchParams.new(

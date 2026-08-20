@@ -20,6 +20,8 @@ defmodule Duffel.Stays.SearchParams do
 
   @required [:check_in_date, :check_out_date, :guests]
 
+  @optional [:free_cancellation_only, :instant_payment, :mobile, :negotiated_rate_ids]
+
   @doc """
   Builds a stays search params map.
 
@@ -27,6 +29,18 @@ defmodule Duffel.Stays.SearchParams do
   defaults to `1`. Pass `:location` (see `around/3`) or `:accommodation`
   to scope the search. Raises `ArgumentError` if a required option is
   missing.
+
+  These optional filters are passed through when given:
+
+    * `:free_cancellation_only` - only return rates that can be cancelled
+      for free
+    * `:instant_payment` - `true` returns only rates paid at booking time,
+      `false` only rates the accommodation collects. Omit for both
+    * `:mobile` - tell Duffel the search came from a mobile device, which
+      can change the rates and content returned
+    * `:negotiated_rate_ids` - negotiated rate IDs to search with,
+      returned alongside public rates where the accommodation matches
+
   """
   @spec new(keyword()) :: map()
   def new(opts) when is_list(opts) do
@@ -40,6 +54,7 @@ defmodule Duffel.Stays.SearchParams do
     }
     |> maybe_put(:location, Keyword.get(opts, :location))
     |> maybe_put(:accommodation, Keyword.get(opts, :accommodation))
+    |> put_optional(opts)
   end
 
   @doc """
@@ -53,6 +68,12 @@ defmodule Duffel.Stays.SearchParams do
       radius: radius,
       geographic_coordinates: %{latitude: latitude, longitude: longitude}
     }
+  end
+
+  defp put_optional(params, opts) do
+    Enum.reduce(@optional, params, fn key, acc ->
+      maybe_put(acc, key, Keyword.get(opts, key))
+    end)
   end
 
   defp require_keys(opts, keys) do
