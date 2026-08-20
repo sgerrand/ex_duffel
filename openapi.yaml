@@ -3468,6 +3468,11 @@ components:
         client_key:
           type: string
           description: Token for use with Duffel UI components
+        airline_credit_ids:
+          type: array
+          items:
+            type: string
+          description: Airline credits Duffel received as input
         slices:
           type: array
           items:
@@ -3599,6 +3604,26 @@ components:
           type: array
           items:
             type: string
+        supported_loyalty_programmes:
+          type: array
+          items:
+            type: string
+          description: IATA codes of the airlines whose loyalty programmes this offer accepts
+        available_airline_credit_ids:
+          type: array
+          items:
+            type: string
+          description: Airline credits that can pay for this offer
+        intended_payment_methods:
+          type: array
+          items:
+            type: string
+          description: Payment methods the offer was priced for
+        intended_services:
+          type: array
+          items:
+            type: object
+          description: Services the offer was priced with
         conditions:
           $ref: "#/components/schemas/OfferConditions"
         private_fares:
@@ -3648,6 +3673,12 @@ components:
           description: ISO 8601 duration
         fare_brand_name:
           type: ["string", "null"]
+        ngs_shelf:
+          type: ["integer", "null"]
+          description: NGS shelf the fare sits on
+        comparison_key:
+          type: ["string", "null"]
+          description: Identifies slices that are the same journey across offers
         segments:
           type: array
           items:
@@ -3919,11 +3950,17 @@ components:
         booking_reference:
           type: string
           description: Airline PNR
+        booking_references:
+          type: array
+          items:
+            type: object
+          description: One reference per carrier holding part of the order
+        offer_id:
+          type: string
+          description: The offer this order was created from
         type:
           type: string
           enum: [instant, hold]
-        awaiting_payment:
-          type: boolean
         payment_status:
           type: object
           properties:
@@ -4018,6 +4055,24 @@ components:
           enum: [managed, self_managed]
         metadata:
           $ref: "#/components/schemas/Metadata"
+        cancelled_at:
+          type: ["string", "null"]
+          format: date-time
+        synced_at:
+          type: ["string", "null"]
+          format: date-time
+        void_window_ends_at:
+          type: ["string", "null"]
+          format: date-time
+        available_actions:
+          type: array
+          items:
+            type: string
+          description: Actions the order still supports, e.g. `cancel`, `update`
+        intended_payment_methods:
+          type: array
+          items:
+            type: string
         users:
           type: array
           items:
@@ -4042,13 +4097,19 @@ components:
           format: date-time
         type:
           type: string
-          enum: [balance, arc_bsp_cash, card]
+          enum: [balance, arc_bsp_cash, card, airline_credit]
+        status:
+          type: ["string", "null"]
         amount:
           type: string
         currency:
           type: string
         order_id:
           type: string
+        airline_credit_id:
+          type: ["string", "null"]
+        failure_reason:
+          type: ["string", "null"]
     SeatMap:
       type: object
       properties:
@@ -4610,10 +4671,27 @@ components:
             properties:
               type:
                 type: string
+        expires_at:
+          type: ["string", "null"]
+          format: date-time
         cheapest_rate_total_amount:
           type: string
         cheapest_rate_currency:
           type: string
+        cheapest_rate_base_amount:
+          type: ["string", "null"]
+        cheapest_rate_base_currency:
+          type: ["string", "null"]
+        cheapest_rate_public_currency:
+          type: ["string", "null"]
+        cheapest_rate_due_at_accommodation_amount:
+          type: ["string", "null"]
+        cheapest_rate_due_at_accommodation_currency:
+          type: ["string", "null"]
+        supported_negotiated_rates:
+          type: array
+          items:
+            type: object
         cheapest_rate_public_amount:
           type: ["string", "null"]
         accommodation:
@@ -4632,6 +4710,14 @@ components:
           description: Star rating
         review_score:
           type: ["number", "null"]
+        review_count:
+          type: ["integer", "null"]
+        ratings:
+          type: array
+          items:
+            type: object
+        payment_instruction_supported:
+          type: ["boolean", "null"]
         email:
           type: ["string", "null"]
         phone_number:
@@ -4844,6 +4930,10 @@ components:
           type: ["string", "null"]
         due_at_accommodation_currency:
           type: ["string", "null"]
+        deposit_amount:
+          type: ["string", "null"]
+        deposit_currency:
+          type: ["string", "null"]
         accommodation:
           $ref: "#/components/schemas/StaysAccommodation"
         rate:
@@ -4878,6 +4968,16 @@ components:
           type: ["string", "null"]
         loyalty_programme_account_number:
           type: ["string", "null"]
+        supported_loyalty_programme:
+          type: ["string", "null"]
+        estimated_commission_amount:
+          type: ["string", "null"]
+        estimated_commission_currency:
+          type: ["string", "null"]
+        guest_types:
+          type: array
+          items:
+            type: object
         payment:
           type: object
           properties:
