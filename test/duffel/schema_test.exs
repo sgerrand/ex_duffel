@@ -117,6 +117,8 @@ defmodule Duffel.SchemaTest do
           "destination_type" => "airport",
           "duration" => "PT8H",
           "fare_brand_name" => "Economy Basic",
+          "ngs_shelf" => 1,
+          "comparison_key" => "BmlZDw==",
           "conditions" => %{"change_before_departure" => nil},
           "segments" => [%{"id" => "seg_1"}, %{"id" => "seg_2"}]
         })
@@ -129,6 +131,8 @@ defmodule Duffel.SchemaTest do
                destination_type: "airport",
                duration: "PT8H",
                fare_brand_name: "Economy Basic",
+               ngs_shelf: 1,
+               comparison_key: "BmlZDw==",
                conditions: %{"change_before_departure" => nil},
                segments: [%Segment{id: "seg_1"}, %Segment{id: "seg_2"}]
              } = slice
@@ -146,18 +150,23 @@ defmodule Duffel.SchemaTest do
                live_mode: false,
                created_at: "2026-06-01T00:00:00Z",
                type: "balance",
+               status: "succeeded",
                amount: "45.00",
                currency: "GBP",
-               order_id: "ord_1"
+               order_id: "ord_1",
+               airline_credit_id: "acd_1",
+               failure_reason: nil
              } =
                Payment.from_map(%{
                  "id" => "pay_1",
                  "live_mode" => false,
                  "created_at" => "2026-06-01T00:00:00Z",
                  "type" => "balance",
+                 "status" => "succeeded",
                  "amount" => "45.00",
                  "currency" => "GBP",
-                 "order_id" => "ord_1"
+                 "order_id" => "ord_1",
+                 "airline_credit_id" => "acd_1"
                })
     end
   end
@@ -187,6 +196,10 @@ defmodule Duffel.SchemaTest do
           "passengers" => [%{"id" => "pas_1", "type" => "adult"}],
           "available_services" => [%{"id" => "ase_1"}],
           "supported_passenger_identity_document_types" => ["passport"],
+          "supported_loyalty_programmes" => ["BA"],
+          "available_airline_credit_ids" => ["acd_1"],
+          "intended_payment_methods" => ["card"],
+          "intended_services" => [%{"id" => "ase_1", "quantity" => 1}],
           "private_fares" => [%{"type" => "corporate"}]
         })
 
@@ -203,6 +216,10 @@ defmodule Duffel.SchemaTest do
                passenger_identity_documents_required: true,
                available_services: [%{"id" => "ase_1"}],
                supported_passenger_identity_document_types: ["passport"],
+               supported_loyalty_programmes: ["BA"],
+               available_airline_credit_ids: ["acd_1"],
+               intended_payment_methods: ["card"],
+               intended_services: [%{"id" => "ase_1", "quantity" => 1}],
                private_fares: [%{"type" => "corporate"}]
              } = offer
 
@@ -216,6 +233,10 @@ defmodule Duffel.SchemaTest do
                passengers: [],
                available_services: [],
                supported_passenger_identity_document_types: [],
+               supported_loyalty_programmes: [],
+               available_airline_credit_ids: [],
+               intended_payment_methods: [],
+               intended_services: [],
                private_fares: []
              } = Offer.from_map(%{"id" => "off_1"})
     end
@@ -230,7 +251,7 @@ defmodule Duffel.SchemaTest do
           "created_at" => "2026-06-01T00:00:00Z",
           "booking_reference" => "RZPNX8",
           "type" => "instant",
-          "awaiting_payment" => false,
+          "offer_id" => "off_1",
           "payment_status" => %{"awaiting_payment" => false},
           "total_amount" => "350.00",
           "total_currency" => "GBP",
@@ -249,14 +270,20 @@ defmodule Duffel.SchemaTest do
           "documents" => [%{"type" => "electronic_ticket"}],
           "airline_initiated_changes" => [%{"id" => "aic_1"}],
           "changes" => [%{"id" => "och_1"}],
-          "users" => ["icu_1"]
+          "users" => ["icu_1"],
+          "booking_references" => [%{"reference" => "RZPNX8"}],
+          "available_actions" => ["cancel", "update"],
+          "intended_payment_methods" => ["card"],
+          "cancelled_at" => nil,
+          "synced_at" => "2026-06-01T00:05:00Z",
+          "void_window_ends_at" => "2026-06-02T00:00:00Z"
         })
 
       assert %Order{
                id: "ord_1",
                booking_reference: "RZPNX8",
                type: "instant",
-               awaiting_payment: false,
+               offer_id: "off_1",
                payment_status: %{"awaiting_payment" => false},
                total_amount: "350.00",
                owner: %{"iata_code" => "BA"},
@@ -268,7 +295,12 @@ defmodule Duffel.SchemaTest do
                documents: [%{"type" => "electronic_ticket"}],
                airline_initiated_changes: [%{"id" => "aic_1"}],
                changes: [%{"id" => "och_1"}],
-               users: ["icu_1"]
+               users: ["icu_1"],
+               booking_references: [%{"reference" => "RZPNX8"}],
+               available_actions: ["cancel", "update"],
+               intended_payment_methods: ["card"],
+               synced_at: "2026-06-01T00:05:00Z",
+               void_window_ends_at: "2026-06-02T00:00:00Z"
              } = order
 
       assert [%Slice{id: "sli_1", segments: [%Segment{id: "seg_1"}]}] = order.slices
@@ -283,7 +315,10 @@ defmodule Duffel.SchemaTest do
                documents: [],
                airline_initiated_changes: [],
                changes: [],
-               users: []
+               users: [],
+               booking_references: [],
+               available_actions: [],
+               intended_payment_methods: []
              } = Order.from_map(%{"id" => "ord_1"})
     end
   end
@@ -297,6 +332,7 @@ defmodule Duffel.SchemaTest do
           "created_at" => "2026-06-01T00:00:00Z",
           "cabin_class" => "economy",
           "client_key" => "key_abc",
+          "airline_credit_ids" => ["acd_1"],
           "slices" => [%{"origin" => %{"iata_code" => "LHR"}}],
           "passengers" => [%{"id" => "pas_1", "type" => "adult"}],
           "offers" => [%{"id" => "off_1", "slices" => [%{"id" => "sli_1"}]}]
@@ -307,6 +343,7 @@ defmodule Duffel.SchemaTest do
                live_mode: false,
                cabin_class: "economy",
                client_key: "key_abc",
+               airline_credit_ids: ["acd_1"],
                slices: [%{"origin" => %{"iata_code" => "LHR"}}]
              } = offer_request
 
@@ -315,7 +352,7 @@ defmodule Duffel.SchemaTest do
     end
 
     test "defaults missing lists to []" do
-      assert %OfferRequest{slices: [], passengers: [], offers: []} =
+      assert %OfferRequest{slices: [], passengers: [], offers: [], airline_credit_ids: []} =
                OfferRequest.from_map(%{"id" => "orq_1"})
     end
   end

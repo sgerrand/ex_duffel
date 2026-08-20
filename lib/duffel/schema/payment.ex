@@ -3,16 +3,30 @@ defmodule Duffel.Schema.Payment do
   A payment made against an order.
   """
 
-  defstruct [:id, :live_mode, :created_at, :type, :amount, :currency, :order_id]
+  defstruct [
+    :id,
+    :live_mode,
+    :created_at,
+    :type,
+    :status,
+    :amount,
+    :currency,
+    :order_id,
+    :airline_credit_id,
+    :failure_reason
+  ]
 
   @type t :: %__MODULE__{
           id: String.t() | nil,
           live_mode: boolean() | nil,
           created_at: String.t() | nil,
           type: String.t() | nil,
+          status: String.t() | nil,
           amount: String.t() | nil,
           currency: String.t() | nil,
-          order_id: String.t() | nil
+          order_id: String.t() | nil,
+          airline_credit_id: String.t() | nil,
+          failure_reason: String.t() | nil
         }
 
   @doc "Decodes a raw payment map into a `#{inspect(__MODULE__)}`."
@@ -25,9 +39,12 @@ defmodule Duffel.Schema.Payment do
       live_mode: map["live_mode"],
       created_at: map["created_at"],
       type: map["type"],
+      status: map["status"],
       amount: map["amount"],
       currency: map["currency"],
-      order_id: map["order_id"]
+      order_id: map["order_id"],
+      airline_credit_id: map["airline_credit_id"],
+      failure_reason: map["failure_reason"]
     }
   end
 end

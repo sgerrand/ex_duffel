@@ -33,6 +33,10 @@ defmodule Duffel.Schema.Offer do
     passengers: [],
     available_services: [],
     supported_passenger_identity_document_types: [],
+    supported_loyalty_programmes: [],
+    available_airline_credit_ids: [],
+    intended_payment_methods: [],
+    intended_services: [],
     private_fares: []
   ]
 
@@ -58,6 +62,10 @@ defmodule Duffel.Schema.Offer do
           passengers: [Passenger.t()],
           available_services: [map()],
           supported_passenger_identity_document_types: [String.t()],
+          supported_loyalty_programmes: [String.t()],
+          available_airline_credit_ids: [String.t()],
+          intended_payment_methods: [String.t()],
+          intended_services: [map()],
           private_fares: [map()]
         }
 
@@ -89,6 +97,10 @@ defmodule Duffel.Schema.Offer do
       available_services: map["available_services"] || [],
       supported_passenger_identity_document_types:
         map["supported_passenger_identity_document_types"] || [],
+      supported_loyalty_programmes: map["supported_loyalty_programmes"] || [],
+      available_airline_credit_ids: map["available_airline_credit_ids"] || [],
+      intended_payment_methods: map["intended_payment_methods"] || [],
+      intended_services: map["intended_services"] || [],
       private_fares: map["private_fares"] || []
     }
   end

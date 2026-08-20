@@ -16,8 +16,8 @@ defmodule Duffel.Schema.Order do
     :live_mode,
     :created_at,
     :booking_reference,
+    :offer_id,
     :type,
-    :awaiting_payment,
     :payment_status,
     :total_amount,
     :total_currency,
@@ -30,13 +30,19 @@ defmodule Duffel.Schema.Order do
     :cancellation,
     :content,
     :metadata,
+    :cancelled_at,
+    :synced_at,
+    :void_window_ends_at,
     slices: [],
     passengers: [],
     services: [],
     documents: [],
     airline_initiated_changes: [],
     changes: [],
-    users: []
+    users: [],
+    booking_references: [],
+    available_actions: [],
+    intended_payment_methods: []
   ]
 
   @type t :: %__MODULE__{
@@ -44,8 +50,8 @@ defmodule Duffel.Schema.Order do
           live_mode: boolean() | nil,
           created_at: String.t() | nil,
           booking_reference: String.t() | nil,
+          offer_id: String.t() | nil,
           type: String.t() | nil,
-          awaiting_payment: boolean() | nil,
           payment_status: map() | nil,
           total_amount: String.t() | nil,
           total_currency: String.t() | nil,
@@ -58,13 +64,19 @@ defmodule Duffel.Schema.Order do
           cancellation: map() | nil,
           content: String.t() | nil,
           metadata: map() | nil,
+          cancelled_at: String.t() | nil,
+          synced_at: String.t() | nil,
+          void_window_ends_at: String.t() | nil,
           slices: [Slice.t()],
           passengers: [Passenger.t()],
           services: [map()],
           documents: [map()],
           airline_initiated_changes: [map()],
           changes: [map()],
-          users: [String.t()]
+          users: [String.t()],
+          booking_references: [map()],
+          available_actions: [String.t()],
+          intended_payment_methods: [String.t()]
         }
 
   @doc "Decodes a raw order map into a `#{inspect(__MODULE__)}`."
@@ -77,8 +89,8 @@ defmodule Duffel.Schema.Order do
       live_mode: map["live_mode"],
       created_at: map["created_at"],
       booking_reference: map["booking_reference"],
+      offer_id: map["offer_id"],
       type: map["type"],
-      awaiting_payment: map["awaiting_payment"],
       payment_status: map["payment_status"],
       total_amount: map["total_amount"],
       total_currency: map["total_currency"],
@@ -91,13 +103,19 @@ defmodule Duffel.Schema.Order do
       cancellation: map["cancellation"],
       content: map["content"],
       metadata: map["metadata"],
+      cancelled_at: map["cancelled_at"],
+      synced_at: map["synced_at"],
+      void_window_ends_at: map["void_window_ends_at"],
       slices: Schema.cast_list(map["slices"], Slice),
       passengers: Schema.cast_list(map["passengers"], Passenger),
       services: map["services"] || [],
       documents: map["documents"] || [],
       airline_initiated_changes: map["airline_initiated_changes"] || [],
       changes: map["changes"] || [],
-      users: map["users"] || []
+      users: map["users"] || [],
+      booking_references: map["booking_references"] || [],
+      available_actions: map["available_actions"] || [],
+      intended_payment_methods: map["intended_payment_methods"] || []
     }
   end
 end

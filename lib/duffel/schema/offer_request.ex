@@ -19,7 +19,8 @@ defmodule Duffel.Schema.OfferRequest do
     :client_key,
     slices: [],
     passengers: [],
-    offers: []
+    offers: [],
+    airline_credit_ids: []
   ]
 
   @type t :: %__MODULE__{
@@ -30,7 +31,8 @@ defmodule Duffel.Schema.OfferRequest do
           client_key: String.t() | nil,
           slices: [map()],
           passengers: [Passenger.t()],
-          offers: [Offer.t()]
+          offers: [Offer.t()],
+          airline_credit_ids: [String.t()]
         }
 
   @doc "Decodes a raw offer request map into a `#{inspect(__MODULE__)}`."
@@ -46,7 +48,8 @@ defmodule Duffel.Schema.OfferRequest do
       client_key: map["client_key"],
       slices: map["slices"] || [],
       passengers: Schema.cast_list(map["passengers"], Passenger),
-      offers: Schema.cast_list(map["offers"], Offer)
+      offers: Schema.cast_list(map["offers"], Offer),
+      airline_credit_ids: map["airline_credit_ids"] || []
     }
   end
 end

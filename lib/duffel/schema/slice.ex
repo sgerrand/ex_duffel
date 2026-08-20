@@ -17,6 +17,8 @@ defmodule Duffel.Schema.Slice do
     :destination_type,
     :duration,
     :fare_brand_name,
+    :ngs_shelf,
+    :comparison_key,
     :conditions,
     segments: []
   ]
@@ -29,6 +31,8 @@ defmodule Duffel.Schema.Slice do
           destination_type: String.t() | nil,
           duration: String.t() | nil,
           fare_brand_name: String.t() | nil,
+          ngs_shelf: integer() | nil,
+          comparison_key: String.t() | nil,
           conditions: map() | nil,
           segments: [Segment.t()]
         }
@@ -46,6 +50,8 @@ defmodule Duffel.Schema.Slice do
       destination_type: map["destination_type"],
       duration: map["duration"],
       fare_brand_name: map["fare_brand_name"],
+      ngs_shelf: map["ngs_shelf"],
+      comparison_key: map["comparison_key"],
       conditions: map["conditions"],
       segments: Schema.cast_list(map["segments"], Segment)
     }
