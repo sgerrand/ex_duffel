@@ -16,6 +16,8 @@ defmodule Duffel.Schema.Stays.Accommodation do
     :description,
     :rating,
     :review_score,
+    :review_count,
+    :payment_instruction_supported,
     :email,
     :phone_number,
     :check_in_information,
@@ -26,6 +28,7 @@ defmodule Duffel.Schema.Stays.Accommodation do
     :supported_loyalty_programme,
     photos: [],
     amenities: [],
+    ratings: [],
     rooms: []
   ]
 
@@ -35,6 +38,8 @@ defmodule Duffel.Schema.Stays.Accommodation do
           description: String.t() | nil,
           rating: integer() | nil,
           review_score: number() | nil,
+          review_count: integer() | nil,
+          payment_instruction_supported: boolean() | nil,
           email: String.t() | nil,
           phone_number: String.t() | nil,
           check_in_information: map() | nil,
@@ -45,6 +50,7 @@ defmodule Duffel.Schema.Stays.Accommodation do
           supported_loyalty_programme: String.t() | nil,
           photos: [map()],
           amenities: [map()],
+          ratings: [map()],
           rooms: [Room.t()]
         }
 
@@ -59,6 +65,8 @@ defmodule Duffel.Schema.Stays.Accommodation do
       description: map["description"],
       rating: map["rating"],
       review_score: map["review_score"],
+      review_count: map["review_count"],
+      payment_instruction_supported: map["payment_instruction_supported"],
       email: map["email"],
       phone_number: map["phone_number"],
       check_in_information: map["check_in_information"],
@@ -69,6 +77,7 @@ defmodule Duffel.Schema.Stays.Accommodation do
       supported_loyalty_programme: map["supported_loyalty_programme"],
       photos: map["photos"] || [],
       amenities: map["amenities"] || [],
+      ratings: map["ratings"] || [],
       rooms: Schema.cast_list(map["rooms"], Room)
     }
   end

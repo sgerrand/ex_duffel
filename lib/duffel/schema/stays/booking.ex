@@ -24,10 +24,14 @@ defmodule Duffel.Schema.Stays.Booking do
     :accommodation,
     :accommodation_special_requests,
     :loyalty_programme_account_number,
+    :supported_loyalty_programme,
+    :estimated_commission_amount,
+    :estimated_commission_currency,
     :key_collection,
     :payment_status,
     :metadata,
     guests: [],
+    guest_types: [],
     users: []
   ]
 
@@ -46,10 +50,14 @@ defmodule Duffel.Schema.Stays.Booking do
           accommodation: Accommodation.t() | nil,
           accommodation_special_requests: String.t() | nil,
           loyalty_programme_account_number: String.t() | nil,
+          supported_loyalty_programme: String.t() | nil,
+          estimated_commission_amount: String.t() | nil,
+          estimated_commission_currency: String.t() | nil,
           key_collection: map() | nil,
           payment_status: String.t() | nil,
           metadata: map() | nil,
           guests: [map()],
+          guest_types: [map()],
           users: [String.t()]
         }
 
@@ -73,10 +81,14 @@ defmodule Duffel.Schema.Stays.Booking do
       accommodation: Schema.cast(map["accommodation"], Accommodation),
       accommodation_special_requests: map["accommodation_special_requests"],
       loyalty_programme_account_number: map["loyalty_programme_account_number"],
+      supported_loyalty_programme: map["supported_loyalty_programme"],
+      estimated_commission_amount: map["estimated_commission_amount"],
+      estimated_commission_currency: map["estimated_commission_currency"],
       key_collection: map["key_collection"],
       payment_status: map["payment_status"],
       metadata: map["metadata"],
       guests: map["guests"] || [],
+      guest_types: map["guest_types"] || [],
       users: map["users"] || []
     }
   end

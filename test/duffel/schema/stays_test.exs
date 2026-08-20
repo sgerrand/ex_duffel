@@ -107,6 +107,8 @@ defmodule Duffel.Schema.StaysTest do
           "description" => "A hotel in London",
           "rating" => 5,
           "review_score" => 9.4,
+          "review_count" => 336,
+          "payment_instruction_supported" => false,
           "email" => "stay@ritz.example",
           "phone_number" => "+442073002222",
           "check_in_information" => %{"check_in_after_time" => "15:00"},
@@ -117,6 +119,7 @@ defmodule Duffel.Schema.StaysTest do
           "supported_loyalty_programme" => "marriott_bonvoy",
           "photos" => [%{"url" => "https://example.com/hotel.jpg"}],
           "amenities" => [%{"type" => "wifi"}],
+          "ratings" => [%{"source" => "tripadvisor", "value" => 4.5}],
           "rooms" => [%{"name" => "Double Room", "rates" => [%{"id" => "rat_1"}]}]
         })
 
@@ -126,6 +129,8 @@ defmodule Duffel.Schema.StaysTest do
                description: "A hotel in London",
                rating: 5,
                review_score: 9.4,
+               review_count: 336,
+               payment_instruction_supported: false,
                email: "stay@ritz.example",
                phone_number: "+442073002222",
                check_in_information: %{"check_in_after_time" => "15:00"},
@@ -135,14 +140,15 @@ defmodule Duffel.Schema.StaysTest do
                key_collection: %{"instructions" => "Front desk"},
                supported_loyalty_programme: "marriott_bonvoy",
                photos: [%{"url" => "https://example.com/hotel.jpg"}],
-               amenities: [%{"type" => "wifi"}]
+               amenities: [%{"type" => "wifi"}],
+               ratings: [%{"source" => "tripadvisor", "value" => 4.5}]
              } = accommodation
 
       assert [%Room{name: "Double Room", rates: [%Rate{id: "rat_1"}]}] = accommodation.rooms
     end
 
     test "defaults missing lists to []" do
-      assert %Accommodation{photos: [], amenities: [], rooms: []} =
+      assert %Accommodation{photos: [], amenities: [], ratings: [], rooms: []} =
                Accommodation.from_map(%{"id" => "acc_1"})
     end
   end
@@ -155,9 +161,16 @@ defmodule Duffel.Schema.StaysTest do
           "check_in_date" => "2026-08-01",
           "check_out_date" => "2026-08-03",
           "rooms" => 1,
+          "expires_at" => "2026-07-01T12:00:00Z",
           "cheapest_rate_total_amount" => "250.00",
           "cheapest_rate_currency" => "GBP",
+          "cheapest_rate_base_amount" => "200.00",
+          "cheapest_rate_base_currency" => "GBP",
           "cheapest_rate_public_amount" => "275.00",
+          "cheapest_rate_public_currency" => "GBP",
+          "cheapest_rate_due_at_accommodation_amount" => "15.00",
+          "cheapest_rate_due_at_accommodation_currency" => "GBP",
+          "supported_negotiated_rates" => [%{"id" => "nre_1"}],
           "guests" => [%{"type" => "adult"}],
           "accommodation" => %{"id" => "acc_1", "rooms" => [%{"name" => "Double Room"}]}
         })
@@ -167,9 +180,16 @@ defmodule Duffel.Schema.StaysTest do
                check_in_date: "2026-08-01",
                check_out_date: "2026-08-03",
                rooms: 1,
+               expires_at: "2026-07-01T12:00:00Z",
                cheapest_rate_total_amount: "250.00",
                cheapest_rate_currency: "GBP",
+               cheapest_rate_base_amount: "200.00",
+               cheapest_rate_base_currency: "GBP",
                cheapest_rate_public_amount: "275.00",
+               cheapest_rate_public_currency: "GBP",
+               cheapest_rate_due_at_accommodation_amount: "15.00",
+               cheapest_rate_due_at_accommodation_currency: "GBP",
+               supported_negotiated_rates: [%{"id" => "nre_1"}],
                guests: [%{"type" => "adult"}]
              } = result
 
@@ -178,7 +198,7 @@ defmodule Duffel.Schema.StaysTest do
     end
 
     test "leaves a missing accommodation as nil and defaults guests to []" do
-      assert %SearchResult{accommodation: nil, guests: []} =
+      assert %SearchResult{accommodation: nil, guests: [], supported_negotiated_rates: []} =
                SearchResult.from_map(%{"id" => "sr_1"})
     end
   end
@@ -202,6 +222,8 @@ defmodule Duffel.Schema.StaysTest do
           "fee_currency" => "GBP",
           "due_at_accommodation_amount" => "15.00",
           "due_at_accommodation_currency" => "GBP",
+          "deposit_amount" => "50.00",
+          "deposit_currency" => "GBP",
           "supported_loyalty_programme" => "marriott_bonvoy",
           "guests" => [%{"type" => "adult"}],
           "accommodation" => %{"id" => "acc_1"},
@@ -224,6 +246,8 @@ defmodule Duffel.Schema.StaysTest do
                fee_currency: "GBP",
                due_at_accommodation_amount: "15.00",
                due_at_accommodation_currency: "GBP",
+               deposit_amount: "50.00",
+               deposit_currency: "GBP",
                supported_loyalty_programme: "marriott_bonvoy",
                guests: [%{"type" => "adult"}],
                accommodation: %Accommodation{id: "acc_1"},
@@ -254,6 +278,10 @@ defmodule Duffel.Schema.StaysTest do
           "phone_number" => "+442080160508",
           "accommodation_special_requests" => "High floor",
           "loyalty_programme_account_number" => "123456",
+          "supported_loyalty_programme" => "duffel_hotel_group_rewards",
+          "estimated_commission_amount" => "25.00",
+          "estimated_commission_currency" => "GBP",
+          "guest_types" => [%{"type" => "adult", "age" => 30}],
           "key_collection" => %{"instructions" => "Front desk"},
           "payment_status" => "paid",
           "metadata" => %{"trip" => "summer"},
@@ -276,6 +304,10 @@ defmodule Duffel.Schema.StaysTest do
                phone_number: "+442080160508",
                accommodation_special_requests: "High floor",
                loyalty_programme_account_number: "123456",
+               supported_loyalty_programme: "duffel_hotel_group_rewards",
+               estimated_commission_amount: "25.00",
+               estimated_commission_currency: "GBP",
+               guest_types: [%{"type" => "adult", "age" => 30}],
                key_collection: %{"instructions" => "Front desk"},
                payment_status: "paid",
                metadata: %{"trip" => "summer"},
@@ -286,7 +318,7 @@ defmodule Duffel.Schema.StaysTest do
     end
 
     test "leaves a missing accommodation as nil and defaults lists to []" do
-      assert %Booking{accommodation: nil, guests: [], users: []} =
+      assert %Booking{accommodation: nil, guests: [], guest_types: [], users: []} =
                Booking.from_map(%{"id" => "bok_1"})
     end
   end
