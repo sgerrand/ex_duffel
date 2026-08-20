@@ -34,7 +34,7 @@ defmodule Duffel.ClientTest do
     end
 
     test "waits longer than Duffel gives the airlines by default" do
-      assert client().receive_timeout == 30_000
+      assert client().receive_timeout == 130_000
       assert Duffel.new(access_token: "t", receive_timeout: 90_000).receive_timeout == 90_000
     end
 
@@ -179,7 +179,7 @@ defmodule Duffel.ClientTest do
 
     test "reaches Req" do
       assert {:ok, _} = Client.get(capturing_client(access_token: "t"), "/air/orders")
-      assert_received {:options, %{receive_timeout: 30_000}}
+      assert_received {:options, %{receive_timeout: 130_000}}
     end
 
     test "can be raised on the client" do

@@ -16,12 +16,14 @@ defmodule Duffel.Client do
 
   ## Timeouts
 
-  A request waits 30 seconds for a response before giving up, which leaves
-  room for the 20 seconds Duffel gives each airline to answer a search by
-  default. Raise `:receive_timeout` on the client when you
-  raise `supplier_timeout`, which Duffel allows up to 60 seconds:
+  A request waits 130 seconds for a response before giving up. Duffel
+  allows order and booking creation to take up to 120 seconds, and
+  recommends a client timeout slightly above that. Searches are quicker:
+  each airline gets 20 seconds to answer by default, up to the 60 seconds
+  `supplier_timeout` allows. Lower `:receive_timeout` on a client used
+  only for searching:
 
-      Duffel.new(access_token: token, receive_timeout: 90_000)
+      Duffel.new(access_token: token, receive_timeout: 30_000)
 
   A timeout is a transient failure, so it is retried like any other.
 
@@ -70,7 +72,7 @@ defmodule Duffel.Client do
 
   # Req waits 15s by default, which is less than the 20s Duffel gives each
   # airline to answer a search, so a plain offer request could not finish.
-  @receive_timeout 30_000
+  @receive_timeout 130_000
 
   # The client is passed to every resource function, so it shows up in stack
   # traces, crash reports and error trackers. Keep the token out of them.

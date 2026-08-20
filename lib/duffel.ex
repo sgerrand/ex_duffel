@@ -27,7 +27,8 @@ defmodule Duffel do
     * `:base_url` - defaults to `"https://api.duffel.com"`
     * `:api_version` - value for the `Duffel-Version` header, defaults to `"v2"`
     * `:receive_timeout` - milliseconds to wait for a response, defaults to
-      `30_000`. Raise it when you raise Duffel's `supplier_timeout`
+      `130_000`, which covers the 120 seconds Duffel allows order and
+      booking creation to take
     * `:req_options` - extra options merged into every `Req` request
       (useful for test stubs). Merged last, so it overrides everything above
 

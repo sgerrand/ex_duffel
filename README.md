@@ -41,13 +41,14 @@ Test mode and live mode use the same API — only the token differs. Clients
 are plain structs, so multi-tenant apps can hold one per Duffel account.
 
 `Duffel.new/1` also takes `:base_url`, `:api_version`, `:receive_timeout`
-and `:req_options`. A request waits 30 seconds for a response, which covers
-the 20 seconds Duffel gives each airline to answer a search by default;
-raise it if you raise `supplier_timeout`, which Duffel allows up to 60
-seconds:
+and `:req_options`. A request waits 130 seconds for a response, which
+covers the 120 seconds Duffel allows order and booking creation to take.
+Searching is much quicker — each airline gets 20 seconds to answer by
+default, up to the 60 seconds `supplier_timeout` allows — so lower it on a
+client used only for searching:
 
 ```elixir
-client = Duffel.new(access_token: token, receive_timeout: 90_000)
+client = Duffel.new(access_token: token, receive_timeout: 30_000)
 ```
 
 Every call returns `{:ok, result}` or `{:error, %Duffel.Error{}}`.
