@@ -32,7 +32,7 @@ defmodule Duffel.Cars.SearchParams do
     :dropoff_location
   ]
 
-  @driver_fields [:age, :given_name, :family_name, :email, :phone_number]
+  @driver_fields [:age, :residence_country_code]
 
   @doc """
   Builds a cars search params map.
@@ -49,8 +49,18 @@ defmodule Duffel.Cars.SearchParams do
   end
 
   @doc """
-  Builds a `driver` value. Accepts `:age`, `:given_name`, `:family_name`,
-  `:email` and `:phone_number`; absent fields are omitted.
+  Builds a `driver` value for a search. Accepts `:age` and
+  `:residence_country_code`; absent fields are omitted.
+
+  A search driver only describes who is renting, because age and country
+  of residence change which rates a supplier offers. The driver on a
+  booking is a different shape (name, email, phone number, date of birth)
+  and is passed straight to `Duffel.Cars.Bookings.create/3`.
+
+  ## Examples
+
+      Duffel.Cars.SearchParams.driver(age: 30, residence_country_code: "GB")
+
   """
   @spec driver(keyword()) :: map()
   def driver(opts \\ []) when is_list(opts) do

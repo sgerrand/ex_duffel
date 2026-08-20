@@ -45,10 +45,14 @@ defmodule Duffel.Cars.SearchParamsTest do
 
   describe "driver/1" do
     test "keeps given fields and omits the rest" do
-      assert SearchParams.driver(age: 30, email: "amelia@duffel.com") == %{
+      assert SearchParams.driver(age: 30, residence_country_code: "GB") == %{
                age: 30,
-               email: "amelia@duffel.com"
+               residence_country_code: "GB"
              }
+    end
+
+    test "ignores fields that only belong on a booking driver" do
+      assert SearchParams.driver(age: 30, given_name: "Amelia") == %{age: 30}
     end
 
     test "defaults to an empty map" do
