@@ -411,9 +411,10 @@ defmodule Duffel.Client do
 
   defp retry?(_request, _response_or_exception), do: false
 
-  # Duffel takes repeated `key[]` parameters for array filters. Req's `:params`
-  # option cannot express those: it keeps only the last value for a repeated
-  # key, and renders a list value as one run-together string. So the query
+  # Duffel takes repeated `key[]` parameters for array filters, and
+  # `key[sub]` for its datetime range filters. Req's `:params` option cannot
+  # express either: it keeps only the last value for a repeated key, and
+  # renders a list or map value as one run-together string. So the query
   # string is built here and appended to the path.
   defp append_query(path, nil), do: path
 
@@ -426,12 +427,24 @@ defmodule Duffel.Client do
 
   defp encode_query(params) do
     params
-    |> Enum.flat_map(fn
-      {key, values} when is_list(values) -> Enum.map(values, &{to_string(key), &1})
-      {key, value} -> [{to_string(key), value}]
-    end)
+    |> Enum.flat_map(&encode_param/1)
     |> URI.encode_query()
   end
+
+  # A list sends one parameter per element, so `passenger_name[]` can carry
+  # several names. A map nests, so `departing_at: %{after: ...}` becomes
+  # `departing_at[after]=...`.
+  defp encode_param({key, values}) when is_list(values) do
+    Enum.map(values, &{to_string(key), &1})
+  end
+
+  defp encode_param({key, nested}) when is_map(nested) and not is_struct(nested) do
+    Enum.flat_map(nested, fn {sub_key, value} ->
+      encode_param({"#{key}[#{sub_key}]", value})
+    end)
+  end
+
+  defp encode_param({key, value}), do: [{to_string(key), value}]
 
   # Failed requests are retried automatically, including POSTs, so every POST
   # gets a key to stop a retry booking twice.

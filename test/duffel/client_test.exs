@@ -285,6 +285,36 @@ defmodule Duffel.ClientTest do
                })
     end
 
+    test "nests a map value as key[sub]" do
+      stub(fn conn ->
+        assert conn.params["departing_at"] == %{"after" => "2026-07-01T00:00:00Z"}
+        assert conn.query_params["limit"] == "50"
+        Req.Test.json(conn, %{"data" => []})
+      end)
+
+      assert {:ok, _} =
+               Client.list(client(), "/air/orders",
+                 departing_at: %{after: "2026-07-01T00:00:00Z"},
+                 limit: 50
+               )
+    end
+
+    test "nests every key of a map value" do
+      stub(fn conn ->
+        assert conn.params["created_at"] == %{
+                 "after" => "2026-07-01T00:00:00Z",
+                 "before" => "2026-07-31T00:00:00Z"
+               }
+
+        Req.Test.json(conn, %{"data" => []})
+      end)
+
+      assert {:ok, _} =
+               Client.list(client(), "/air/orders",
+                 created_at: %{after: "2026-07-01T00:00:00Z", before: "2026-07-31T00:00:00Z"}
+               )
+    end
+
     test "sends scalar parameters unchanged" do
       stub(fn conn ->
         assert conn.query_params == %{"limit" => "50", "sort" => "total_amount"}
