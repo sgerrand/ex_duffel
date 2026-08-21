@@ -60,6 +60,8 @@ defmodule Duffel.OfferRequests do
 
       Duffel.OfferRequests.get(client, "orq_123", params: [view: "itineraries"])
 
+  Decode that shape with `Duffel.Schema.ItineraryView.from_map/1`.
+
   """
   @spec get(Client.t(), String.t(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def get(client, id, opts \\ []) when is_binary(id) do

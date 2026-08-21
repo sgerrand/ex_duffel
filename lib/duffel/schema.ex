@@ -29,7 +29,9 @@ defmodule Duffel.Schema do
 
   * Flights: `Duffel.Schema.OfferRequest`, `Duffel.Schema.Offer`,
     `Duffel.Schema.Order`, `Duffel.Schema.Slice`, `Duffel.Schema.Segment`,
-    `Duffel.Schema.Passenger` and `Duffel.Schema.Payment`.
+    `Duffel.Schema.Passenger` and `Duffel.Schema.Payment`. A search asked
+    for with `view: "itineraries"` comes back in a different shape, and
+    has its own schema in `Duffel.Schema.ItineraryView`.
 
   * Stays: `Duffel.Schema.Stays.SearchResult`,
     `Duffel.Schema.Stays.Accommodation`, `Duffel.Schema.Stays.Room`,

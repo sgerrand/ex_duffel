@@ -164,7 +164,10 @@ hd(order.slices).segments
 Schemas cover three areas:
 
 - **Flights** — `Duffel.Schema.OfferRequest`, `Offer`, `Order`, `Slice`,
-  `Segment`, `Passenger` and `Payment`.
+  `Segment`, `Passenger` and `Payment`. A search asked for with
+  `view: "itineraries"` has its own schema, `Duffel.Schema.ItineraryView`,
+  which groups offers by itinerary and fare brand and resolves the
+  airlines, places and aircraft that shape names by ID.
 - **Stays** — `Duffel.Schema.Stays.SearchResult`, `Accommodation`, `Room`,
   `Rate`, `Quote` and `Booking`.
 - **Cars** — `Duffel.Schema.Cars.Search`, `Rate`, `Quote` and `Booking`.
