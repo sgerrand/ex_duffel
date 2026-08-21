@@ -14,9 +14,11 @@ defmodule Duffel.Orders do
 
   Build the params by hand or with `Duffel.Orders.CreateParams`.
 
-  A generated `Idempotency-Key` stops the automatic retry of a failed
-  request booking twice. Pass your own key when your application may
-  retry the same booking itself, so the second attempt reuses it.
+  A failed create is not retried automatically on the statuses Duffel
+  calls non-retryable, and every request carries an `Idempotency-Key`.
+  Duffel does not document how it treats that header, so after a failure
+  do not assume a second attempt is free: list orders by `:offer_id` to
+  see whether the booking already exists.
 
   ## Options
 
