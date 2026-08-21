@@ -399,21 +399,25 @@ defmodule Duffel.Client do
   @retry_transport_reasons [:timeout, :econnrefused, :closed]
   @retry_http2_reasons [:unprocessed, :pool_not_available]
 
-  defp retry?(_request, %Req.Response{status: status}) when status in @retry_statuses, do: true
+  @doc false
+  @spec retry?(Req.Request.t(), Req.Response.t() | Exception.t()) :: boolean()
+  def retry?(request, response_or_exception)
 
-  defp retry?(%Req.Request{method: method}, %Req.Response{status: status})
-       when status in @safe_retry_statuses and method in [:get, :head],
-       do: true
+  def retry?(_request, %Req.Response{status: status}) when status in @retry_statuses, do: true
 
-  defp retry?(_request, %Req.TransportError{reason: reason})
-       when reason in @retry_transport_reasons,
-       do: true
+  def retry?(%Req.Request{method: method}, %Req.Response{status: status})
+      when status in @safe_retry_statuses and method in [:get, :head],
+      do: true
 
-  defp retry?(_request, %Req.HTTPError{protocol: :http2, reason: reason})
-       when reason in @retry_http2_reasons,
-       do: true
+  def retry?(_request, %Req.TransportError{reason: reason})
+      when reason in @retry_transport_reasons,
+      do: true
 
-  defp retry?(_request, _response_or_exception), do: false
+  def retry?(_request, %Req.HTTPError{protocol: :http2, reason: reason})
+      when reason in @retry_http2_reasons,
+      do: true
+
+  def retry?(_request, _response_or_exception), do: false
 
   # Duffel takes repeated `key[]` parameters for array filters, and
   # `key[sub]` for its datetime range filters. Req's `:params` option cannot

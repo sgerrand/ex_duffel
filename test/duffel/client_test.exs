@@ -195,6 +195,46 @@ defmodule Duffel.ClientTest do
       end
     end
 
+    test "retries a transport error" do
+      test_pid = self()
+
+      stub(fn conn ->
+        attempts = Process.get(:attempts, 0)
+        Process.put(:attempts, attempts + 1)
+        send(test_pid, :attempt)
+
+        if attempts == 0 do
+          Req.Test.transport_error(conn, :timeout)
+        else
+          Req.Test.json(conn, %{"data" => %{"id" => "ord_1"}})
+        end
+      end)
+
+      assert {:ok, %{"data" => %{"id" => "ord_1"}}} =
+               Client.post(retrying_client(), "/air/orders", %{})
+
+      assert attempts() == 2
+    end
+
+    test "gives up on a transport error it does not recognise" do
+      request = Req.new(method: :post)
+
+      refute Client.retry?(request, %Req.TransportError{reason: :ehostunreach})
+    end
+
+    test "retries an unprocessed http2 request" do
+      request = Req.new(method: :post)
+
+      assert Client.retry?(request, %Req.HTTPError{protocol: :http2, reason: :unprocessed})
+
+      assert Client.retry?(request, %Req.HTTPError{
+               protocol: :http2,
+               reason: :pool_not_available
+             })
+
+      refute Client.retry?(request, %Req.HTTPError{protocol: :http2, reason: :protocol_error})
+    end
+
     test "retries a 504 on a read" do
       counting_stub(504)
 
