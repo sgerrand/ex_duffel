@@ -30,7 +30,7 @@ jobs:
             otp: "28"
           - elixir: "1.20"
             otp: "29"
-    name: Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }}
+    name: Test (Elixir ${{ matrix.elixir }}, OTP ${{ matrix.otp }})
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -147,3 +147,20 @@ jobs:
 
       - name: Run Credo
         run: mix credo --strict
+
+  required:
+    name: Required
+    if: always()
+    needs:
+      - test
+      - dialyzer
+      - credo
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Fail if any required job did not succeed
+        if: >-
+          contains(needs.*.result, 'failure') ||
+          contains(needs.*.result, 'cancelled') ||
+          contains(needs.*.result, 'skipped')
+        run: exit 1
