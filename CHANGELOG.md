@@ -8,6 +8,13 @@ From the next release onward, entries below are generated automatically by
 [release-please](https://github.com/googleapis/release-please) from
 [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [0.1.1](https://github.com/sgerrand/ex_duffel/compare/v0.1.0...v0.1.1) (2026-09-10)
+
+
+### Bug Fixes
+
+* **deps:** bump req from 0.7.3 to 0.7.4 ([#16](https://github.com/sgerrand/ex_duffel/issues/16)) ([fb798bc](https://github.com/sgerrand/ex_duffel/commit/fb798bc6e8c1c39040bf380dd7518fd1fff59380))
+
 ## [0.1.0](https://github.com/sgerrand/ex_duffel/compare/v0.1.0...v0.1.0) (2026-08-29)
 
 
