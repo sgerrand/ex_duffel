@@ -293,10 +293,15 @@ that keeps a copy:
 
 ```elixir
 defmodule MyAppWeb.CacheBodyReader do
+  # `:more` means the body is bigger than one read, so keep each chunk
   def read_body(conn, opts) do
-    with {:ok, body, conn} <- Plug.Conn.read_body(conn, opts) do
-      conn = update_in(conn.assigns[:raw_body], &[body | &1 || []])
-      {:ok, body, conn}
+    case Plug.Conn.read_body(conn, opts) do
+      {status, body, conn} when status in [:ok, :more] ->
+        conn = update_in(conn.assigns[:raw_body], &[body | &1 || []])
+        {status, body, conn}
+
+      error ->
+        error
     end
   end
 end
