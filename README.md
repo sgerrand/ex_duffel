@@ -285,6 +285,43 @@ end
 Verification uses a constant-time comparison and rejects deliveries older
 than 5 minutes (configurable via `:tolerance`).
 
+### Keeping the raw body in Phoenix
+
+`Plug.Parsers` reads and decodes the body before your controller runs, so
+the raw bytes are gone by the time you need them. Give it a body reader
+that keeps a copy:
+
+```elixir
+defmodule MyAppWeb.CacheBodyReader do
+  def read_body(conn, opts) do
+    with {:ok, body, conn} <- Plug.Conn.read_body(conn, opts) do
+      conn = update_in(conn.assigns[:raw_body], &[body | &1 || []])
+      {:ok, body, conn}
+    end
+  end
+end
+```
+
+Add it to the `Plug.Parsers` call in your endpoint:
+
+```elixir
+plug Plug.Parsers,
+  parsers: [:urlencoded, :multipart, :json],
+  pass: ["*/*"],
+  json_decoder: Phoenix.json_library(),
+  body_reader: {MyAppWeb.CacheBodyReader, :read_body, []}
+```
+
+Then, in the controller:
+
+```elixir
+raw_body = conn.assigns.raw_body |> Enum.reverse() |> IO.iodata_to_binary()
+signature_header = conn |> get_req_header("x-duffel-signature") |> List.first()
+```
+
+This keeps a copy of every request body. To keep it only for webhooks,
+check `conn.request_path` in `read_body/2`.
+
 ## Resources
 
 ### Flights
