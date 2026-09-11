@@ -112,10 +112,7 @@ order["booking_reference"]
 #=> "RZPNX8"
 ```
 
-Every `POST` carries an `Idempotency-Key` header, generated unless you pass
-`:idempotency_key`. Duffel's documentation does not describe how it treats
-the header, so it is a precaution rather than a guarantee — what keeps a
-retry from booking twice is the retry policy below.
+`:idempotency_key` is optional — see [Error handling](#error-handling).
 
 ## Pagination
 
@@ -232,9 +229,11 @@ before Duffel starts refusing requests:
   retry_in(rate_limit.retry_after_ms)
 ```
 
-Every `POST` also carries an `Idempotency-Key`, but Duffel does not
-document the header, so do not treat it as a second guarantee. After a
-failed create, check whether the order exists before trying again.
+Every `POST` also carries an `Idempotency-Key` header, generated unless
+you pass your own with `:idempotency_key`. Duffel does not document how it
+treats the header, so it is a precaution, not a guarantee — what keeps a
+retry from booking twice is the retry policy above. After a failed create,
+check whether the order exists before trying again.
 
 ## Telemetry
 
