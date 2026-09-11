@@ -68,7 +68,11 @@ defmodule Duffel.MixProject do
           Duffel.Schema.Slice,
           Duffel.Schema.Segment,
           Duffel.Schema.Passenger,
-          Duffel.Schema.Payment
+          Duffel.Schema.Payment,
+          Duffel.Schema.ItineraryView,
+          Duffel.Schema.ItineraryView.Slice,
+          Duffel.Schema.ItineraryView.Itinerary,
+          Duffel.Schema.ItineraryView.Brand
         ],
         "Schemas — Stays": [
           Duffel.Schema.Stays.SearchResult,

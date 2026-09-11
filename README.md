@@ -56,17 +56,22 @@ Every call returns `{:ok, result}` or `{:error, %Duffel.Error{}}`.
 ## Searching and booking flights
 
 ```elixir
-# 1. Search: create an offer request
+# 1. Search: create an offer request. `return_offers: false` leaves the
+#    offers out of this response, so step 2 fetches them only once.
 {:ok, offer_request} =
-  Duffel.OfferRequests.create(client, %{
-    slices: [
-      %{origin: "LHR", destination: "JFK", departure_date: "2026-07-01"}
-    ],
-    passengers: [%{type: "adult"}],
-    cabin_class: "economy"
-  })
+  Duffel.OfferRequests.create(
+    client,
+    %{
+      slices: [
+        %{origin: "LHR", destination: "JFK", departure_date: "2026-07-01"}
+      ],
+      passengers: [%{type: "adult"}],
+      cabin_class: "economy"
+    },
+    params: [return_offers: false]
+  )
 
-# 2. Pick an offer
+# 2. Pick an offer: list them, cheapest first
 {:ok, page} =
   Duffel.Offers.list(client,
     offer_request_id: offer_request["id"],
@@ -107,10 +112,7 @@ order["booking_reference"]
 #=> "RZPNX8"
 ```
 
-Every `POST` carries an `Idempotency-Key` header, generated unless you pass
-`:idempotency_key`. Duffel's documentation does not describe how it treats
-the header, so it is a precaution rather than a guarantee — what keeps a
-retry from booking twice is the retry policy below.
+`:idempotency_key` is optional — see [Error handling](#error-handling).
 
 ## Pagination
 
@@ -227,9 +229,11 @@ before Duffel starts refusing requests:
   retry_in(rate_limit.retry_after_ms)
 ```
 
-Every `POST` also carries an `Idempotency-Key`, but Duffel does not
-document the header, so do not treat it as a second guarantee. After a
-failed create, check whether the order exists before trying again.
+Every `POST` also carries an `Idempotency-Key` header, generated unless
+you pass your own with `:idempotency_key`. Duffel does not document how it
+treats the header, so it is a precaution, not a guarantee — what keeps a
+retry from booking twice is the retry policy above. After a failed create,
+check whether the order exists before trying again.
 
 ## Telemetry
 

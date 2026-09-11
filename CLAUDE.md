@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Elixir client library (`:duffel` on Hex) for the Duffel flights API v2. Single runtime dependency: Req.
+Elixir client library (`:duffel` on Hex) for the Duffel API v2: flights, stays, cars, payments and identity. Runtime dependencies: Req and telemetry. Jason is optional (the test suite uses it; Req pulls it in anyway).
 
 ## Commands
 
@@ -17,6 +17,18 @@ mix format                            # format (run before committing)
 mix docs                              # generate ExDoc docs
 ```
 
+CI runs these checks, and all must pass:
+
+```bash
+mix format --check-formatted
+mix compile --warnings-as-errors
+mix test --cover --warnings-as-errors  # fails below 100% coverage
+mix credo --strict
+MIX_ENV=dev mix dialyzer               # first run builds the PLT, which is slow
+```
+
+The coverage threshold is 100% (`test_coverage` in `mix.exs`), so every new line needs a test.
+
 ## Architecture
 
 Three layers; everything funnels through `Duffel.Client`:
@@ -28,7 +40,7 @@ Three layers; everything funnels through `Duffel.Client`:
 Cross-cutting conventions:
 
 - All calls return `{:ok, result} | {:error, %Duffel.Error{}}`. `Duffel.Error` is a `defexception` (returned in tuples normally, raised by `stream`). Its `type` field is an atom mapped from a whitelist; unknown API types become `:unknown_error`. Transport failures (connection refused, timeout) are normalised too, via `Error.from_exception/1`: `type: :transport_error`, `status: nil`, original exception under `:reason`. No raw `Req`/`Mint` exception ever reaches a caller. Rate-limit headers (`ratelimit-limit`/`-remaining`/`-reset`, `retry-after`) are parsed by `Duffel.RateLimit.from_response/1` onto `Error.rate_limit` and into `[:duffel, :request, :stop]` telemetry metadata; `openapi.yaml` does not document these headers, so parsing is tolerant and yields `nil` when they are absent.
-- Resource functions return raw string-keyed maps. `Duffel.Schema.*` (`lib/duffel/schema/*.ex`) adds opt-in typed views over the core booking flow (OfferRequest, Offer, Order, Slice, Segment, Passenger, Payment): callers pass a map to `from_map/1` to get a struct. Decoding is shallow — only those seven types nest into structs; everything else stays a raw map. `Duffel.Schema.ItineraryView` (plus its nested `Slice`, `Itinerary` and `Brand`) covers the separate shape `view: "itineraries"` returns; its segments and brand offers stay raw maps because Duffel documents that tree but not the fields at those levels. `from_map/1` is idempotent: it returns an already-decoded struct untouched, so add that clause to any new schema. Fields are sourced from the response schemas in `openapi.yaml`.
+- Resource functions return raw string-keyed maps. `Duffel.Schema.*` (`lib/duffel/schema/**/*.ex`) adds opt-in typed views: callers pass a map to `from_map/1` to get a struct. Schemas cover flights (OfferRequest, Offer, Order, Slice, Segment, Passenger, Payment), stays (`Schema.Stays.*`: SearchResult, Accommodation, Room, Rate, Quote, Booking) and cars (`Schema.Cars.*`: Search, Rate, Quote, Booking). Decoding is shallow — a field becomes a struct only when its type has its own schema (via `Schema.cast/2` or `Schema.cast_list/2`); everything else stays a raw map. `Duffel.Schema.ItineraryView` (plus its nested `Slice`, `Itinerary` and `Brand`) covers the separate shape `view: "itineraries"` returns; its segments and brand offers stay raw maps because Duffel documents that tree but not the fields at those levels. `from_map/1` is idempotent: it returns an already-decoded struct untouched, so add that clause to any new schema. Fields are sourced from the response schemas in `openapi.yaml`.
 - Query strings are built by `Client.request/4` and appended to the path, not handed to Req's `:params`. Req keeps only the last value for a repeated key and renders a list or map value as one run-together string, neither of which can express Duffel's `key[]` array filters (`passenger_name[]`, `selected_partial_offer[]`) or its `key[sub]` range filters (`departing_at[after]`). A list value sends one parameter per element; a map value nests, so `departing_at: %{after: ...}` becomes `departing_at[after]=...`.
 - `Duffel.Page` uses `after_cursor`/`before_cursor` field names because `after` is a reserved word in Elixir (`page.after` won't parse).
 - POST/PUT/PATCH bodies are wrapped in `%{data: body}` by `Client.post`/`Client.put`/`Client.patch`; callers pass the inner params only.
@@ -40,7 +52,13 @@ Cross-cutting conventions:
 
 No network. Every test builds a client with `req_options: [plug: {Req.Test, __MODULE__}, retry: false]` and stubs responses with `Req.Test.stub/2` + `Req.Test.json/2`. All test modules are `async: true`. Follow this pattern for new resources; assert on `conn.request_path`, `conn.query_params`, and decoded request bodies in the stub.
 
-When adding a resource, verify endpoint paths/params/bodies against `openapi.yaml` in the repo root (OpenAPI 3.1 spec of the Duffel v2 API) — it is the source of truth, more reliable than scraping the live docs. Resources are not uniformly RESTful (e.g. two-step cancellations/changes, action sub-paths like `/actions/confirm`; webhooks have no single-GET endpoint).
+## Adding a module
+
+1. Check endpoint paths, params and bodies against `openapi.yaml` in the repo root (OpenAPI 3.1 spec of the Duffel v2 API). It is the source of truth, more reliable than scraping the live docs. Resources are not uniformly RESTful (e.g. two-step cancellations/changes, action sub-paths like `/actions/confirm`; webhooks have no single-GET endpoint).
+2. Follow `lib/duffel/offer_requests.ex` for a resource, or an existing `lib/duffel/schema/` module for a schema.
+3. Add a test file using the pattern above.
+4. Add the module to `groups_for_modules` in `mix.exs`. Otherwise hexdocs lists it outside every group.
+5. Add it to the README: the resource tables, or the schema list under "Typed responses".
 
 ## Commits
 
