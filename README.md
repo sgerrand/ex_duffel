@@ -216,9 +216,12 @@ end
 A transport error has `status: nil` and keeps the underlying exception,
 usually a `Req.TransportError`, under `reason`.
 
-Failures Duffel calls retryable — 408, 429, 503 and network errors — are
-retried automatically with backoff, honouring `retry-after`. This applies
-to every method, `POST` included. 500 and 502 are never retried, because
+A 408, 429 or 503 is retried automatically with backoff, honouring
+`retry-after`. So are a few network errors: a timeout, a refused or closed
+connection, and an HTTP/2 request that was never sent. Other network
+errors, such as an unreachable host, are not retried and come back
+straight away as a `:transport_error`. Retries apply to every method,
+`POST` included. 500 and 502 are never retried, because
 Duffel documents them as "you should not retry this request", and a 504 is
 retried only on a `GET` or `HEAD`. When a response reports your
 remaining allowance, `Duffel.RateLimit` carries it — on the error, and on

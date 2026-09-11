@@ -25,19 +25,21 @@ defmodule Duffel.Client do
 
       Duffel.new(access_token: token, receive_timeout: 30_000)
 
-  A timeout is a transient failure, so it is retried like any other.
+  A timeout is a transient failure, so it is retried.
 
   ## Retries and idempotency
 
   A failed request is retried up to three times with a growing delay, but
-  only when Duffel calls the failure retryable: a 408, 429 or 503, or a
-  network error. Duffel documents 500 and 502 as "you should not retry
-  this request", so neither is. A 504 can mean the supplier processed the
-  request after all, so it is retried for `GET` and `HEAD` only, never for
-  a `POST` that could book twice.
+  only for a 408, 429 or 503, or one of a few network errors: a timeout, a
+  refused or closed connection, or an HTTP/2 request that was never sent.
+  Other network errors, such as an unreachable host, are not retried.
+  Duffel documents 500 and 502 as "you should not retry this request", so
+  neither is. A 504 can mean the supplier processed the request after all,
+  so it is retried for `GET` and `HEAD` only, never for a `POST` that could
+  book twice.
 
-  The 408, 429, 503 and network-error retries apply to every method,
-  `POST` included. A timeout or dropped connection can happen after Duffel
+  Apart from the 504 case, these retries apply to every method, `POST`
+  included. A timeout or dropped connection can happen after Duffel
   has accepted a booking, so a retried `POST` can still book twice, and a
   create that ends in a transport error or a 5xx has an unknown outcome.
   Check whether the resource exists before trying again.
