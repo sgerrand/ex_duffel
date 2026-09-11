@@ -36,11 +36,16 @@ defmodule Duffel.Client do
   request after all, so it is retried for `GET` and `HEAD` only, never for
   a `POST` that could book twice.
 
-  Retries still apply to every method, so each `POST` also carries an
-  `Idempotency-Key` header. Duffel's API documentation never mentions
-  idempotency keys, so treat the header as a precaution rather than a
-  promise that a repeated `POST` is discarded — what stops a retry booking
-  twice is the policy above. See `post/4` for how to supply your own key.
+  The 408, 429, 503 and network-error retries apply to every method,
+  `POST` included. A timeout or dropped connection can happen after Duffel
+  has accepted a booking, so a retried `POST` can still book twice, and a
+  create that ends in a transport error or a 5xx has an unknown outcome.
+  Check whether the resource exists before trying again.
+
+  By default a `POST` carries an `Idempotency-Key` header, which retries
+  of the same call reuse. Duffel's API documentation never mentions
+  idempotency keys, so the header is best-effort: it may not stop a
+  duplicate. See `post/4` for how to supply your own key or send none.
 
   Pass your own `retry:` in `:req_options` to replace this policy.
 
@@ -156,8 +161,8 @@ defmodule Duffel.Client do
   Performs a `POST` request, wrapping `body` in the `data` envelope the
   Duffel API expects.
 
-  Every `POST` carries an `Idempotency-Key` header. One is generated
-  unless you pass your own. Pass `idempotency_key: nil` to send no key at
+  By default a `POST` carries an `Idempotency-Key` header. One is
+  generated unless you pass your own. Pass `idempotency_key: nil` to send no key at
   all.
 
   Duffel's API documentation does not describe how it treats this header,
