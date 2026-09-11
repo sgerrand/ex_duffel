@@ -5,6 +5,8 @@ book and manage flights.
 
 ## Installation
 
+Needs Elixir 1.15 or later. Talks to version 2 of the Duffel API.
+
 Add `duffel` to your list of dependencies in `mix.exs`:
 
 <!-- x-release-please-start-version -->
