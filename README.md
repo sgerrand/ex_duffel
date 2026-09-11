@@ -56,17 +56,22 @@ Every call returns `{:ok, result}` or `{:error, %Duffel.Error{}}`.
 ## Searching and booking flights
 
 ```elixir
-# 1. Search: create an offer request
+# 1. Search: create an offer request. `return_offers: false` leaves the
+#    offers out of this response, so step 2 fetches them only once.
 {:ok, offer_request} =
-  Duffel.OfferRequests.create(client, %{
-    slices: [
-      %{origin: "LHR", destination: "JFK", departure_date: "2026-07-01"}
-    ],
-    passengers: [%{type: "adult"}],
-    cabin_class: "economy"
-  })
+  Duffel.OfferRequests.create(
+    client,
+    %{
+      slices: [
+        %{origin: "LHR", destination: "JFK", departure_date: "2026-07-01"}
+      ],
+      passengers: [%{type: "adult"}],
+      cabin_class: "economy"
+    },
+    params: [return_offers: false]
+  )
 
-# 2. Pick an offer
+# 2. Pick an offer: list them, cheapest first
 {:ok, page} =
   Duffel.Offers.list(client,
     offer_request_id: offer_request["id"],
