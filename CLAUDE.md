@@ -17,6 +17,18 @@ mix format                            # format (run before committing)
 mix docs                              # generate ExDoc docs
 ```
 
+CI runs these checks, and all must pass:
+
+```bash
+mix format --check-formatted
+mix compile --warnings-as-errors
+mix test --cover --warnings-as-errors  # fails below 100% coverage
+mix credo --strict
+MIX_ENV=dev mix dialyzer               # first run builds the PLT, which is slow
+```
+
+The coverage threshold is 100% (`test_coverage` in `mix.exs`), so every new line needs a test.
+
 ## Architecture
 
 Three layers; everything funnels through `Duffel.Client`:
@@ -40,7 +52,13 @@ Cross-cutting conventions:
 
 No network. Every test builds a client with `req_options: [plug: {Req.Test, __MODULE__}, retry: false]` and stubs responses with `Req.Test.stub/2` + `Req.Test.json/2`. All test modules are `async: true`. Follow this pattern for new resources; assert on `conn.request_path`, `conn.query_params`, and decoded request bodies in the stub.
 
-When adding a resource, verify endpoint paths/params/bodies against `openapi.yaml` in the repo root (OpenAPI 3.1 spec of the Duffel v2 API) — it is the source of truth, more reliable than scraping the live docs. Resources are not uniformly RESTful (e.g. two-step cancellations/changes, action sub-paths like `/actions/confirm`; webhooks have no single-GET endpoint).
+## Adding a module
+
+1. Check endpoint paths, params and bodies against `openapi.yaml` in the repo root (OpenAPI 3.1 spec of the Duffel v2 API). It is the source of truth, more reliable than scraping the live docs. Resources are not uniformly RESTful (e.g. two-step cancellations/changes, action sub-paths like `/actions/confirm`; webhooks have no single-GET endpoint).
+2. Follow `lib/duffel/offer_requests.ex` for a resource, or an existing `lib/duffel/schema/` module for a schema.
+3. Add a test file using the pattern above.
+4. Add the module to `groups_for_modules` in `mix.exs`. Otherwise hexdocs lists it outside every group.
+5. Add it to the README: the resource tables, or the schema list under "Typed responses".
 
 ## Commits
 
