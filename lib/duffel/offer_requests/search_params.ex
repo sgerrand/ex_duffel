@@ -20,7 +20,10 @@ defmodule Duffel.OfferRequests.SearchParams do
   Using the builder is optional — `create/3` still accepts a plain map.
   """
 
+  use Duffel.Params
+
   @required [:slices, :passengers]
+  @optional [:cabin_class, :max_connections, :private_fares, :airline_credit_ids]
   @passenger_fields [
     :type,
     :age,
@@ -39,16 +42,13 @@ defmodule Duffel.OfferRequests.SearchParams do
   """
   @spec new(keyword()) :: map()
   def new(opts) when is_list(opts) do
-    require_keys(opts, @required)
+    require_params!(opts, @required)
 
     %{
       slices: Keyword.fetch!(opts, :slices),
       passengers: Keyword.fetch!(opts, :passengers)
     }
-    |> maybe_put(:cabin_class, Keyword.get(opts, :cabin_class))
-    |> maybe_put(:max_connections, Keyword.get(opts, :max_connections))
-    |> maybe_put(:private_fares, Keyword.get(opts, :private_fares))
-    |> maybe_put(:airline_credit_ids, Keyword.get(opts, :airline_credit_ids))
+    |> put_params(opts, @optional)
   end
 
   @doc """
@@ -62,8 +62,7 @@ defmodule Duffel.OfferRequests.SearchParams do
   def slice(origin, destination, departure_date, opts \\ [])
       when is_binary(origin) and is_binary(destination) and is_binary(departure_date) do
     %{origin: origin, destination: destination, departure_date: departure_date}
-    |> maybe_put(:departure_time, Keyword.get(opts, :departure_time))
-    |> maybe_put(:arrival_time, Keyword.get(opts, :arrival_time))
+    |> put_params(opts, [:departure_time, :arrival_time])
   end
 
   @doc """
@@ -74,18 +73,6 @@ defmodule Duffel.OfferRequests.SearchParams do
   """
   @spec passenger(keyword()) :: map()
   def passenger(opts \\ []) when is_list(opts) do
-    Enum.reduce(@passenger_fields, %{}, fn key, acc ->
-      maybe_put(acc, key, Keyword.get(opts, key))
-    end)
+    put_params(%{}, opts, @passenger_fields)
   end
-
-  defp require_keys(opts, keys) do
-    case Enum.reject(keys, &Keyword.has_key?(opts, &1)) do
-      [] -> :ok
-      missing -> raise ArgumentError, "missing required options: #{inspect(missing)}"
-    end
-  end
-
-  defp maybe_put(map, _key, nil), do: map
-  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 end

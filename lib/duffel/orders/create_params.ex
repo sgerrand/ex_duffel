@@ -35,7 +35,11 @@ defmodule Duffel.Orders.CreateParams do
   Using the builder is optional — `create/3` still accepts a plain map.
   """
 
+  use Duffel.Params
+
   @required [:selected_offers, :passengers]
+
+  @optional [:type, :payments, :services, :users, :metadata]
 
   @passenger_fields [
     :id,
@@ -64,17 +68,13 @@ defmodule Duffel.Orders.CreateParams do
   """
   @spec new(keyword()) :: map()
   def new(opts) when is_list(opts) do
-    require_keys(opts, @required)
+    require_params!(opts, @required)
 
     %{
       selected_offers: Keyword.fetch!(opts, :selected_offers),
       passengers: Keyword.fetch!(opts, :passengers)
     }
-    |> maybe_put(:type, Keyword.get(opts, :type))
-    |> maybe_put(:payments, Keyword.get(opts, :payments))
-    |> maybe_put(:services, Keyword.get(opts, :services))
-    |> maybe_put(:users, Keyword.get(opts, :users))
-    |> maybe_put(:metadata, Keyword.get(opts, :metadata))
+    |> put_params(opts, @optional)
   end
 
   @doc """
@@ -85,7 +85,7 @@ defmodule Duffel.Orders.CreateParams do
   are omitted.
   """
   @spec passenger(keyword()) :: map()
-  def passenger(opts) when is_list(opts), do: take(opts, @passenger_fields)
+  def passenger(opts) when is_list(opts), do: put_params(%{}, opts, @passenger_fields)
 
   @doc """
   Builds a payment. Accepts `:type` (`"balance"`, `"arc_bsp_cash"` or
@@ -93,27 +93,11 @@ defmodule Duffel.Orders.CreateParams do
   `:three_d_secure_session_id`. Absent fields are omitted.
   """
   @spec payment(keyword()) :: map()
-  def payment(opts) when is_list(opts), do: take(opts, @payment_fields)
+  def payment(opts) when is_list(opts), do: put_params(%{}, opts, @payment_fields)
 
   @doc "Builds a service to add to the order, by ID and quantity."
   @spec service(String.t(), pos_integer()) :: map()
   def service(id, quantity) when is_binary(id) and is_integer(quantity) do
     %{id: id, quantity: quantity}
   end
-
-  defp take(opts, fields) do
-    Enum.reduce(fields, %{}, fn key, acc ->
-      maybe_put(acc, key, Keyword.get(opts, key))
-    end)
-  end
-
-  defp require_keys(opts, keys) do
-    case Enum.reject(keys, &Keyword.has_key?(opts, &1)) do
-      [] -> :ok
-      missing -> raise ArgumentError, "missing required options: #{inspect(missing)}"
-    end
-  end
-
-  defp maybe_put(map, _key, nil), do: map
-  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 end

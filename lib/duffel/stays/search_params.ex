@@ -18,9 +18,18 @@ defmodule Duffel.Stays.SearchParams do
   Using the builder is optional — `create/3` still accepts a plain map.
   """
 
+  use Duffel.Params
+
   @required [:check_in_date, :check_out_date, :guests]
 
-  @optional [:free_cancellation_only, :instant_payment, :mobile, :negotiated_rate_ids]
+  @optional [
+    :location,
+    :accommodation,
+    :free_cancellation_only,
+    :instant_payment,
+    :mobile,
+    :negotiated_rate_ids
+  ]
 
   @doc """
   Builds a stays search params map.
@@ -44,7 +53,7 @@ defmodule Duffel.Stays.SearchParams do
   """
   @spec new(keyword()) :: map()
   def new(opts) when is_list(opts) do
-    require_keys(opts, @required)
+    require_params!(opts, @required)
 
     %{
       check_in_date: Keyword.fetch!(opts, :check_in_date),
@@ -52,9 +61,7 @@ defmodule Duffel.Stays.SearchParams do
       rooms: Keyword.get(opts, :rooms, 1),
       guests: Keyword.fetch!(opts, :guests)
     }
-    |> maybe_put(:location, Keyword.get(opts, :location))
-    |> maybe_put(:accommodation, Keyword.get(opts, :accommodation))
-    |> put_optional(opts)
+    |> put_params(opts, @optional)
   end
 
   @doc """
@@ -69,20 +76,4 @@ defmodule Duffel.Stays.SearchParams do
       geographic_coordinates: %{latitude: latitude, longitude: longitude}
     }
   end
-
-  defp put_optional(params, opts) do
-    Enum.reduce(@optional, params, fn key, acc ->
-      maybe_put(acc, key, Keyword.get(opts, key))
-    end)
-  end
-
-  defp require_keys(opts, keys) do
-    case Enum.reject(keys, &Keyword.has_key?(opts, &1)) do
-      [] -> :ok
-      missing -> raise ArgumentError, "missing required options: #{inspect(missing)}"
-    end
-  end
-
-  defp maybe_put(map, _key, nil), do: map
-  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 end

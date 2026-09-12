@@ -45,6 +45,7 @@ Cross-cutting conventions:
 - `Duffel.Page` uses `after_cursor`/`before_cursor` field names because `after` is a reserved word in Elixir (`page.after` won't parse).
 - POST/PUT/PATCH bodies are wrapped in `%{data: body}` by `Client.post`/`Client.put`/`Client.patch`; callers pass the inner params only.
 - Most endpoints use the main host. `Duffel.Cards` talks to the PCI-scoped `api.duffel.cards` host instead: it swaps `base_url` for the client's `cards_base_url` before calling `Client`, so the transport has no per-resource host handling.
+- The params builders (`lib/duffel/*/{search,create}_params.ex`) all start with `use Duffel.Params`, which injects two private helpers: `require_params!/2` raises on a missing required option, and `put_params/3` copies a whitelist of keys onto a map, skipping the ones the caller left out. They are injected rather than called as `Duffel.Params.foo/2` on purpose — a cross-module call would have to be public, and these are not API the library supports. This is the one `use` in the library; everything else stays macro-free. Keep the domain shape functions (`slice/4`, `passenger/1`, `around/3`) in the builder itself.
 - `client.req_options` is merged last in `Client.request/4`, so it overrides everything — this is the seam tests use.
 - `Duffel.Webhooks.verify_signature/4` is pure (no HTTP). It deliberately implements its own constant-time compare to avoid requiring OTP 25 (`:crypto.hash_equals`) or a runtime plug dependency. Plug is a test-only dep (needed by `Req.Test`).
 
