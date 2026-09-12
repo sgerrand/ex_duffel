@@ -164,8 +164,8 @@ defmodule Duffel.Client do
   Duffel API expects.
 
   By default a `POST` carries an `Idempotency-Key` header. One is
-  generated unless you pass your own. Pass `idempotency_key: nil` to send no key at
-  all.
+  generated unless you pass your own. Pass `idempotency_key: nil` to send
+  no key at all.
 
   Duffel's API documentation does not describe how it treats this header,
   so do not count on it to collapse two identical bookings. Supply your

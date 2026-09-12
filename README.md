@@ -218,9 +218,10 @@ end
 A transport error has `status: nil` and keeps the underlying exception,
 usually a `Req.TransportError`, under `reason`.
 
-A 408, 429 or 503 is retried automatically with backoff, honouring
-`retry-after`. So are a few network errors: a timeout, a refused or closed
-connection, and an HTTP/2 request that was never sent. Other network
+A 408, 429 or 503 is retried automatically, with a growing delay between
+attempts. On a 429 or 503 the delay comes from `retry-after` when Duffel
+sends it. A few network errors are retried too: a timeout, a refused or
+closed connection, and an HTTP/2 request that was never sent. Other network
 errors, such as an unreachable host, are not retried and come back
 straight away as a `:transport_error`. Retries apply to every method,
 `POST` included. 500 and 502 are never retried, because
