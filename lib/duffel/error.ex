@@ -89,13 +89,13 @@ defmodule Duffel.Error do
         }
 
   @impl true
-  def message(%__MODULE__{status: nil} = error) do
-    "Duffel request failed: #{error.message || error.title || "unknown error"}"
-  end
-
   def message(%__MODULE__{} = error) do
     detail = error.message || error.title || "unknown error"
-    "Duffel API error (HTTP #{error.status}): #{detail}"
+
+    case error.status do
+      nil -> "Duffel request failed: #{detail}"
+      status -> "Duffel API error (HTTP #{status}): #{detail}"
+    end
   end
 
   @doc false
@@ -112,7 +112,8 @@ defmodule Duffel.Error do
 
     # Duffel sets `x-request-id` on every response, so an error whose body
     # is missing or is not the documented shape still has one to quote.
-    request_id = request_id || header(response, "x-request-id")
+    request_id =
+      request_id || response |> Req.Response.get_header("x-request-id") |> List.first()
 
     first = List.first(errors) || %{}
 
@@ -150,13 +151,6 @@ defmodule Duffel.Error do
       message: Exception.message(exception),
       reason: exception
     }
-  end
-
-  defp header(response, name) do
-    case Req.Response.get_header(response, name) do
-      [value | _rest] -> value
-      [] -> nil
-    end
   end
 
   for type <- @known_types do
