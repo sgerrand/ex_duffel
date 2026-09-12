@@ -1,17 +1,8 @@
 defmodule Duffel.IdentityTest do
-  use ExUnit.Case, async: true
+  use Duffel.Case, async: true
 
   alias Duffel.Identity.{ComponentClientKeys, CustomerUserGroups, CustomerUsers}
   alias Duffel.Page
-
-  defp client do
-    Duffel.new(
-      access_token: "duffel_test_abc",
-      req_options: [plug: {Req.Test, __MODULE__}, retry: false]
-    )
-  end
-
-  defp stub(fun), do: Req.Test.stub(__MODULE__, fun)
 
   describe "CustomerUsers" do
     test "create/3 posts a user" do

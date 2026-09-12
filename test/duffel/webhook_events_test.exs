@@ -1,16 +1,7 @@
 defmodule Duffel.WebhookEventsTest do
-  use ExUnit.Case, async: true
+  use Duffel.Case, async: true
 
   alias Duffel.{Page, WebhookEvents}
-
-  defp client do
-    Duffel.new(
-      access_token: "duffel_test_abc",
-      req_options: [plug: {Req.Test, __MODULE__}, retry: false]
-    )
-  end
-
-  defp stub(fun), do: Req.Test.stub(__MODULE__, fun)
 
   test "list/1 defaults and stream/2" do
     stub(fn conn ->

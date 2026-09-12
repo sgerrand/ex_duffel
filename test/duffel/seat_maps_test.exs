@@ -1,14 +1,7 @@
 defmodule Duffel.SeatMapsTest do
-  use ExUnit.Case, async: true
+  use Duffel.Case, async: true
 
   alias Duffel.SeatMaps
-
-  defp client do
-    Duffel.new(
-      access_token: "duffel_test_abc",
-      req_options: [plug: {Req.Test, __MODULE__}, retry: false]
-    )
-  end
 
   test "lists seat maps for an offer" do
     Req.Test.stub(__MODULE__, fn conn ->
