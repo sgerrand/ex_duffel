@@ -10,7 +10,8 @@ defmodule Duffel.Error do
         {:ok, order} -> ...
         {:error, %Duffel.Error{type: :rate_limit_error}} -> retry_later()
         {:error, %Duffel.Error{type: :validation_error, source: source}} -> ...
-        {:error, %Duffel.Error{type: :transport_error}} -> retry_later()
+        # Duffel may have made the order anyway, so look before retrying
+        {:error, %Duffel.Error{type: :transport_error}} -> check_order_then_retry()
       end
 
   ## API errors

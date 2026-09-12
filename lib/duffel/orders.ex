@@ -14,16 +14,22 @@ defmodule Duffel.Orders do
 
   Build the params by hand or with `Duffel.Orders.CreateParams`.
 
-  A failed create is not retried automatically on the statuses Duffel
-  calls non-retryable, and every request carries an `Idempotency-Key`.
-  Duffel does not document how it treats that header, so after a failure
-  do not assume a second attempt is free: list orders by `:offer_id` to
-  see whether the booking already exists.
+  This `POST` is retried like any other request: on a 408, 429 or 503, and
+  on a few transport errors. Duffel calls 500 and 502 non-retryable, so
+  those are handed straight back. A timeout can land after Duffel has
+  accepted the booking, so a create that ends in a transport error or a 5xx
+  has an unknown outcome. List orders by `:offer_id` to see whether the
+  booking already exists before you try again.
+
+  By default the request carries an `Idempotency-Key` header, which a retry
+  reuses. Duffel does not document how it treats that header, so it is
+  best-effort: it may not stop a duplicate.
 
   ## Options
 
     * `:idempotency_key` - value for the `Idempotency-Key` header. A key is
-      generated when you do not pass one (see `Duffel.Client.post/4`).
+      generated when you do not pass one; `nil` sends no header (see
+      `Duffel.Client.post/4`).
 
   ## Examples
 

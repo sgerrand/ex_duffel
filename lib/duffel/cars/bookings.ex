@@ -15,7 +15,8 @@ defmodule Duffel.Cars.Bookings do
   ## Options
 
     * `:idempotency_key` - value for the `Idempotency-Key` header. A key is
-      generated when you do not pass one (see `Duffel.Client.post/4`).
+      generated when you do not pass one; `nil` sends no header (see
+      `Duffel.Client.post/4`).
 
   ## Examples
 
