@@ -22,6 +22,8 @@ defmodule Duffel.Cars.SearchParams do
   Using the builder is optional — `create/3` still accepts a plain map.
   """
 
+  use Duffel.Params
+
   @required [
     :driver,
     :pickup_date,
@@ -44,7 +46,7 @@ defmodule Duffel.Cars.SearchParams do
   """
   @spec new(keyword()) :: map()
   def new(opts) when is_list(opts) do
-    require_keys(opts, @required)
+    require_params!(opts, @required)
     Map.new(@required, fn key -> {key, Keyword.fetch!(opts, key)} end)
   end
 
@@ -64,9 +66,7 @@ defmodule Duffel.Cars.SearchParams do
   """
   @spec driver(keyword()) :: map()
   def driver(opts \\ []) when is_list(opts) do
-    Enum.reduce(@driver_fields, %{}, fn key, acc ->
-      maybe_put(acc, key, Keyword.get(opts, key))
-    end)
+    put_params(%{}, opts, @driver_fields)
   end
 
   @doc "Builds a pickup or dropoff location at an airport by IATA code."
@@ -79,14 +79,4 @@ defmodule Duffel.Cars.SearchParams do
       when is_number(latitude) and is_number(longitude) do
     %{geographic_coordinates: %{latitude: latitude, longitude: longitude}}
   end
-
-  defp require_keys(opts, keys) do
-    case Enum.reject(keys, &Keyword.has_key?(opts, &1)) do
-      [] -> :ok
-      missing -> raise ArgumentError, "missing required options: #{inspect(missing)}"
-    end
-  end
-
-  defp maybe_put(map, _key, nil), do: map
-  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 end
