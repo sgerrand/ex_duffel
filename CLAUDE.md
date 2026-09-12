@@ -54,7 +54,7 @@ No network. Every test that makes a request builds a client with `req_options: [
 
 ## Adding a module
 
-1. Check endpoint paths, params and bodies against `openapi.yaml` in the repo root (OpenAPI 3.1 spec of the Duffel v2 API). It is the source of truth, more reliable than scraping the live docs. Resources are not uniformly RESTful (e.g. two-step cancellations/changes, action sub-paths like `/actions/confirm`; webhooks have no single-GET endpoint).
+1. Check endpoint paths, params and bodies against `openapi.yaml` in the repo root (OpenAPI 3.1 spec of the Duffel v2 API). It is the starting point, but it is hand-maintained and has gaps, so validate any assumption about API shape or behaviour against the live docs at <https://duffel.com/docs/api/> before writing it down. Where the two disagree, the live docs win: fix `openapi.yaml` in the same change. Resources are not uniformly RESTful (e.g. two-step cancellations/changes, action sub-paths like `/actions/confirm`; webhooks have no single-GET endpoint).
 2. Follow `lib/duffel/offer_requests.ex` for a resource, or an existing `lib/duffel/schema/` module for a schema.
 3. Add a test file using the pattern above.
 4. Add the module to `groups_for_modules` in `mix.exs`. Otherwise hexdocs lists it outside every group.

@@ -587,6 +587,11 @@ paths:
           schema:
             type: string
           description: Filter by airline booking reference (PNR)
+        - name: offer_id
+          in: query
+          schema:
+            type: string
+          description: Filter by the offer the order was created from
         - name: awaiting_payment
           in: query
           schema:
@@ -596,7 +601,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [payment_required_by, "-payment_required_by", created_at, "-created_at", next_departure, "-next_departure"]
+            enum: [payment_required_by, "-payment_required_by", total_amount, "-total_amount", created_at, "-created_at", next_departure, "-next_departure"]
         - name: passenger_name[]
           in: query
           schema:
