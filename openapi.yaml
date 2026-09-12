@@ -592,6 +592,11 @@ paths:
           schema:
             type: string
           description: Filter by the offer the order was created from
+        - name: user_id
+          in: query
+          schema:
+            type: string
+          description: Filter by the customer user on the order
         - name: awaiting_payment
           in: query
           schema:
@@ -620,6 +625,24 @@ paths:
           style: form
           explode: true
           description: Filter by owner.id, which must be an airline.id
+        - name: origin_id[]
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          description: Filter by the origin of any slice
+        - name: destination_id[]
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          description: Filter by the destination of any slice
         - name: requires_action
           in: query
           schema:
