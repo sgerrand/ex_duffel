@@ -25,6 +25,8 @@ defmodule Duffel do
 
     * `:access_token` - Duffel API access token (required)
     * `:base_url` - defaults to `"https://api.duffel.com"`
+    * `:cards_base_url` - host used by `Duffel.Cards`, defaults to
+      `"https://api.duffel.cards"`
     * `:api_version` - value for the `Duffel-Version` header, defaults to `"v2"`
     * `:receive_timeout` - milliseconds to wait for a response, defaults to
       `130_000`, which covers the 120 seconds Duffel allows order and
