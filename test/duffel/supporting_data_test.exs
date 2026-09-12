@@ -1,16 +1,7 @@
 defmodule Duffel.SupportingDataTest do
-  use ExUnit.Case, async: true
+  use Duffel.Case, async: true
 
   alias Duffel.{Aircraft, Airlines, Airports, Cities, LoyaltyProgrammes, Page, Places}
-
-  defp client do
-    Duffel.new(
-      access_token: "duffel_test_abc",
-      req_options: [plug: {Req.Test, __MODULE__}, retry: false]
-    )
-  end
-
-  defp stub(fun), do: Req.Test.stub(__MODULE__, fun)
 
   describe "Airlines" do
     test "list/2 and get/2" do

@@ -1,18 +1,7 @@
 defmodule Duffel.CardsTest do
-  use ExUnit.Case, async: true
+  use Duffel.Case, async: true
 
   alias Duffel.{Cards, ThreeDSecureSessions}
-
-  defp client(opts \\ []) do
-    Duffel.new(
-      [
-        access_token: "duffel_test_abc",
-        req_options: [plug: {Req.Test, __MODULE__}, retry: false]
-      ] ++ opts
-    )
-  end
-
-  defp stub(fun), do: Req.Test.stub(__MODULE__, fun)
 
   describe "Cards" do
     test "create/3 tokenises against the cards host" do

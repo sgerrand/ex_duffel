@@ -50,7 +50,7 @@ Cross-cutting conventions:
 
 ## Tests
 
-No network. Every test that makes a request builds a client with `req_options: [plug: {Req.Test, __MODULE__}, retry: false]` and stubs responses with `Req.Test.stub/2` + `Req.Test.json/2`. All test modules are `async: true`. Follow this pattern for new resources; assert on `conn.request_path`, `conn.query_params`, and decoded request bodies in the stub.
+No network. Every test that makes a request starts with `use Duffel.Case, async: true` (`test/support/case.ex`, on the test `elixirc_paths`), which provides `client/1` — a client wired to `req_options: [plug: {Req.Test, __MODULE__}, retry: false]`, with any option you pass overriding those — and `stub/1` for `Req.Test.stub(__MODULE__, fun)`. Stub responses with `Req.Test.json/2`. Follow this pattern for new resources; assert on `conn.request_path`, `conn.query_params`, and decoded request bodies in the stub.
 
 ## Adding a module
 

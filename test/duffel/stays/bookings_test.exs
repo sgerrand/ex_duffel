@@ -1,17 +1,8 @@
 defmodule Duffel.Stays.BookingsTest do
-  use ExUnit.Case, async: true
+  use Duffel.Case, async: true
 
   alias Duffel.Page
   alias Duffel.Stays.{Bookings, Quotes}
-
-  defp client do
-    Duffel.new(
-      access_token: "duffel_test_abc",
-      req_options: [plug: {Req.Test, __MODULE__}, retry: false]
-    )
-  end
-
-  defp stub(fun), do: Req.Test.stub(__MODULE__, fun)
 
   describe "Quotes" do
     test "create/3 posts a rate_id" do

@@ -1,16 +1,7 @@
 defmodule Duffel.BatchOfferRequestsTest do
-  use ExUnit.Case, async: true
+  use Duffel.Case, async: true
 
   alias Duffel.BatchOfferRequests
-
-  defp client do
-    Duffel.new(
-      access_token: "duffel_test_abc",
-      req_options: [plug: {Req.Test, __MODULE__}, retry: false]
-    )
-  end
-
-  defp stub(fun), do: Req.Test.stub(__MODULE__, fun)
 
   test "create/3 posts the search" do
     stub(fn conn ->

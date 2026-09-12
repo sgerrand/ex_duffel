@@ -9,20 +9,11 @@ defmodule Duffel.ClientTest.CaptureAdapter do
 end
 
 defmodule Duffel.ClientTest do
-  use ExUnit.Case, async: true
+  use Duffel.Case, async: true
 
   doctest Duffel.Client
 
   alias Duffel.{Client, Error, Page, RateLimit}
-
-  defp client(opts \\ []) do
-    Duffel.new(
-      access_token: Keyword.get(opts, :access_token, "duffel_test_abc"),
-      req_options: [plug: {Req.Test, __MODULE__}, retry: false]
-    )
-  end
-
-  defp stub(fun), do: Req.Test.stub(__MODULE__, fun)
 
   describe "new/1" do
     test "hides the access token when the client is inspected" do
@@ -127,14 +118,8 @@ defmodule Duffel.ClientTest do
         end
       end)
 
-      retrying_client =
-        Duffel.new(
-          access_token: "duffel_test_abc",
-          req_options: [plug: {Req.Test, __MODULE__}, retry_delay: 0, retry_log_level: false]
-        )
-
       assert {:ok, %{"data" => %{"id" => "ord_1"}}} =
-               Client.post(retrying_client, "/air/orders", %{})
+               Client.post(retrying_client(), "/air/orders", %{})
 
       assert_received {:key, key}
       assert_received {:key, ^key}
@@ -143,10 +128,7 @@ defmodule Duffel.ClientTest do
 
   describe "retries" do
     defp retrying_client do
-      Duffel.new(
-        access_token: "duffel_test_abc",
-        req_options: [plug: {Req.Test, __MODULE__}, retry_delay: 0, retry_log_level: false]
-      )
+      client(req_options: [plug: {Req.Test, __MODULE__}, retry_delay: 0, retry_log_level: false])
     end
 
     defp counting_stub(status) do
@@ -401,10 +383,10 @@ defmodule Duffel.ClientTest do
   describe "rate limits" do
     defp rate_limited_stub(headers) do
       stub(fn conn ->
-        conn
-        |> then(
-          &Enum.reduce(headers, &1, fn {k, v}, acc -> Plug.Conn.put_resp_header(acc, k, v) end)
-        )
+        headers
+        |> Enum.reduce(conn, fn {key, value}, acc ->
+          Plug.Conn.put_resp_header(acc, key, value)
+        end)
         |> Plug.Conn.put_status(429)
         |> Req.Test.json(%{"errors" => [%{"type" => "rate_limit_error"}]})
       end)
