@@ -5,6 +5,8 @@ book and manage flights.
 
 ## Installation
 
+Needs Elixir 1.15 or later. Talks to version 2 of the Duffel API.
+
 Add `duffel` to your list of dependencies in `mix.exs`:
 
 <!-- x-release-please-start-version -->
@@ -40,8 +42,8 @@ client = Duffel.new()
 Test mode and live mode use the same API — only the token differs. Clients
 are plain structs, so multi-tenant apps can hold one per Duffel account.
 
-`Duffel.new/1` also takes `:base_url`, `:api_version`, `:receive_timeout`
-and `:req_options`. A request waits 130 seconds for a response, which
+`Duffel.new/1` also takes `:base_url`, `:cards_base_url`, `:api_version`,
+`:receive_timeout` and `:req_options`. A request waits 130 seconds for a response, which
 covers the 120 seconds Duffel allows order and booking creation to take.
 Searching is much quicker — each airline gets 20 seconds to answer by
 default, up to the 60 seconds `supplier_timeout` allows — so lower it on a
@@ -283,6 +285,48 @@ end
 Verification uses a constant-time comparison and rejects deliveries older
 than 5 minutes (configurable via `:tolerance`).
 
+### Keeping the raw body in Phoenix
+
+`Plug.Parsers` reads and decodes the body before your controller runs, so
+the raw bytes are gone by the time you need them. Give it a body reader
+that keeps a copy:
+
+```elixir
+defmodule MyAppWeb.CacheBodyReader do
+  # `:more` means the body is bigger than one read, so keep each chunk
+  def read_body(conn, opts) do
+    case Plug.Conn.read_body(conn, opts) do
+      {status, body, conn} when status in [:ok, :more] ->
+        conn = update_in(conn.assigns[:raw_body], &[body | &1 || []])
+        {status, body, conn}
+
+      error ->
+        error
+    end
+  end
+end
+```
+
+Add it to the `Plug.Parsers` call in your endpoint:
+
+```elixir
+plug Plug.Parsers,
+  parsers: [:urlencoded, :multipart, :json],
+  pass: ["*/*"],
+  json_decoder: Phoenix.json_library(),
+  body_reader: {MyAppWeb.CacheBodyReader, :read_body, []}
+```
+
+Then, in the controller:
+
+```elixir
+raw_body = conn.assigns.raw_body |> Enum.reverse() |> IO.iodata_to_binary()
+signature_header = conn |> get_req_header("x-duffel-signature") |> List.first()
+```
+
+This keeps a copy of every request body. To keep it only for webhooks,
+check `conn.request_path` in `read_body/2`.
+
 ## Resources
 
 ### Flights
@@ -359,7 +403,9 @@ the client. Card tokens are single-use and short-lived.
 ## Testing your app
 
 The client accepts `req_options`, so you can stub HTTP with
-[`Req.Test`](https://hexdocs.pm/req/Req.Test.html) — no network needed:
+[`Req.Test`](https://hexdocs.pm/req/Req.Test.html) — no network needed.
+`Req.Test` needs Plug. Phoenix apps already have it; otherwise add
+`{:plug, "~> 1.0", only: :test}` to your dependencies.
 
 ```elixir
 client =
@@ -372,6 +418,34 @@ Req.Test.stub(MyApp.DuffelStub, fn conn ->
   Req.Test.json(conn, %{"data" => %{"id" => "ord_1"}})
 end)
 ```
+
+`retry: false` stops the client retrying a stubbed 429 or 503, which
+would slow your tests down.
+
+To test your error handling, stub an error response in Duffel's shape:
+
+```elixir
+Req.Test.stub(MyApp.DuffelStub, fn conn ->
+  conn
+  |> Plug.Conn.put_status(422)
+  |> Req.Test.json(%{
+    "errors" => [
+      %{
+        "type" => "validation_error",
+        "code" => "missing_field",
+        "title" => "Missing field",
+        "message" => "slices is required"
+      }
+    ]
+  })
+end)
+
+{:error, %Duffel.Error{type: :validation_error, status: 422}} =
+  Duffel.OfferRequests.create(client, %{})
+```
+
+`Req.Test.transport_error(conn, :timeout)` stands in for a request that
+never reached Duffel, and comes back as a `:transport_error`.
 
 ## Documentation
 
