@@ -8,6 +8,13 @@ From the next release onward, entries below are generated automatically by
 [release-please](https://github.com/googleapis/release-please) from
 [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [0.1.2](https://github.com/sgerrand/ex_duffel/compare/v0.1.1...v0.1.2) (2026-09-12)
+
+
+### Performance Improvements
+
+* **webhooks:** hash the signature input as iodata ([#27](https://github.com/sgerrand/ex_duffel/issues/27)) ([505830d](https://github.com/sgerrand/ex_duffel/commit/505830d3dc69a85a1942678c7735a058e26720ac))
+
 ## [0.1.1](https://github.com/sgerrand/ex_duffel/compare/v0.1.0...v0.1.1) (2026-09-10)
 
 

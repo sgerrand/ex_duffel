@@ -14,7 +14,7 @@ Add `duffel` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:duffel, "~> 0.1.1"}
+    {:duffel, "~> 0.1.2"}
   ]
 end
 ```
