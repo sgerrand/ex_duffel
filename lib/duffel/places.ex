@@ -25,6 +25,6 @@ defmodule Duffel.Places do
   """
   @spec suggestions(Client.t(), keyword() | map()) :: {:ok, [map()]} | {:error, Error.t()}
   def suggestions(client, params) do
-    Client.get_data(client, @path, params: Map.new(params))
+    Client.get_data(client, @path, params: params)
   end
 end
