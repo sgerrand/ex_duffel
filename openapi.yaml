@@ -643,6 +643,27 @@ paths:
           style: form
           explode: true
           description: Filter by the destination of any slice
+        - name: departing_at
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            $ref: "#/components/schemas/DateTimeRangeFilter"
+          description: Filter on when the first slice departs
+        - name: arriving_at
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            $ref: "#/components/schemas/DateTimeRangeFilter"
+          description: Filter on when the last slice arrives
+        - name: created_at
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            $ref: "#/components/schemas/DateTimeRangeFilter"
+          description: Filter on when the order was created
         - name: requires_action
           in: query
           schema:
@@ -3379,6 +3400,17 @@ components:
         after:
           type: ["string", "null"]
           description: Cursor to pass as `after` to fetch the next page; null on the last page
+    DateTimeRangeFilter:
+      type: object
+      description: Range filter sent as `key[before]` and `key[after]` query parameters
+      properties:
+        before:
+          type: string
+          format: date-time
+        after:
+          type: string
+          format: date-time
+      additionalProperties: false
     Metadata:
       type: object
       maxProperties: 50
