@@ -40,9 +40,7 @@ defmodule Duffel.Cards do
   """
   @spec create(Client.t(), map(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def create(client, params, opts \\ []) do
-    opts = Keyword.put_new(opts, :base_url, client.cards_base_url)
-
-    Client.post_data(client, @path, params, opts)
+    Client.post_data(on_cards_host(client), @path, params, opts)
   end
 
   @doc """
@@ -50,6 +48,10 @@ defmodule Duffel.Cards do
   """
   @spec delete(Client.t(), String.t()) :: :ok | {:error, Error.t()}
   def delete(client, id) when is_binary(id) do
-    client |> Client.delete("#{@path}/#{id}", base_url: client.cards_base_url) |> Client.discard()
+    client |> on_cards_host() |> Client.delete("#{@path}/#{id}") |> Client.discard()
   end
+
+  # Cards live on their own host, so the request goes out with the client's
+  # cards base URL in place of the main one.
+  defp on_cards_host(%Client{} = client), do: %{client | base_url: client.cards_base_url}
 end

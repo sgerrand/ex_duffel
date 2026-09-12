@@ -44,7 +44,7 @@ Cross-cutting conventions:
 - Query strings are built by `Client.request/4` and appended to the path, not handed to Req's `:params`. Req keeps only the last value for a repeated key and renders a list or map value as one run-together string, neither of which can express Duffel's `key[]` array filters (`passenger_name[]`, `selected_partial_offer[]`) or its `key[sub]` range filters (`departing_at[after]`). A list value sends one parameter per element; a map value nests, so `departing_at: %{after: ...}` becomes `departing_at[after]=...`.
 - `Duffel.Page` uses `after_cursor`/`before_cursor` field names because `after` is a reserved word in Elixir (`page.after` won't parse).
 - POST/PUT/PATCH bodies are wrapped in `%{data: body}` by `Client.post`/`Client.put`/`Client.patch`; callers pass the inner params only.
-- Most endpoints use the main host. `Duffel.Cards` talks to the PCI-scoped `api.duffel.cards` host instead, via the client's `cards_base_url` and a `:base_url` override passed through to `Client.request/4`.
+- Most endpoints use the main host. `Duffel.Cards` talks to the PCI-scoped `api.duffel.cards` host instead: it swaps `base_url` for the client's `cards_base_url` before calling `Client`, so the transport has no per-resource host handling.
 - `client.req_options` is merged last in `Client.request/4`, so it overrides everything — this is the seam tests use.
 - `Duffel.Webhooks.verify_signature/4` is pure (no HTTP). It deliberately implements its own constant-time compare to avoid requiring OTP 25 (`:crypto.hash_equals`) or a runtime plug dependency. Plug is a test-only dep (needed by `Req.Test`).
 

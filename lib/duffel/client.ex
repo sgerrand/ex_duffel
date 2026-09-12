@@ -346,7 +346,6 @@ defmodule Duffel.Client do
   def request(%__MODULE__{} = client, method, path, opts \\ []) do
     {idempotency_key, opts} = Keyword.pop(opts, :idempotency_key)
     {params, opts} = Keyword.pop(opts, :params)
-    base_url = Keyword.get(opts, :base_url, client.base_url)
     url = append_query(path, params)
 
     headers =
@@ -356,7 +355,7 @@ defmodule Duffel.Client do
     req_options =
       [
         method: method,
-        base_url: base_url,
+        base_url: client.base_url,
         url: url,
         auth: {:bearer, client.access_token},
         headers: headers,
@@ -367,7 +366,7 @@ defmodule Duffel.Client do
       |> Keyword.merge(Keyword.take(opts, [:json]))
       |> Keyword.merge(client.req_options)
 
-    metadata = %{method: method, path: path, base_url: base_url}
+    metadata = %{method: method, path: path, base_url: client.base_url}
 
     :telemetry.span([:duffel, :request], metadata, fn ->
       response = Req.request(req_options)
