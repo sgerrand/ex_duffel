@@ -133,14 +133,9 @@ defmodule Duffel.Client do
               "missing :access_token. Pass it to Duffel.new/1 or set it in " <>
                 "the :duffel application environment."
 
-    %__MODULE__{
-      access_token: access_token,
-      base_url: Keyword.get(opts, :base_url, @base_url),
-      cards_base_url: Keyword.get(opts, :cards_base_url, @cards_base_url),
-      api_version: Keyword.get(opts, :api_version, @api_version),
-      receive_timeout: Keyword.get(opts, :receive_timeout, @receive_timeout),
-      req_options: Keyword.get(opts, :req_options, [])
-    }
+    # `struct/2` ignores keys that are not client options, so the extra
+    # application environment `Duffel.new/0` passes through is dropped.
+    struct(%__MODULE__{access_token: access_token}, opts)
   end
 
   @doc """
@@ -298,7 +293,7 @@ defmodule Duffel.Client do
   """
   @spec list(t(), String.t(), keyword() | map()) :: {:ok, Page.t()} | {:error, Error.t()}
   def list(%__MODULE__{} = client, path, params \\ []) do
-    case get(client, path, params: Map.new(params)) do
+    case get(client, path, params: params) do
       {:ok, %{"data" => data} = body} when is_list(data) -> {:ok, Page.from_body(body)}
       {:ok, body} -> {:error, Error.unexpected_response(body)}
       {:error, %Error{}} = error -> error
@@ -327,14 +322,8 @@ defmodule Duffel.Client do
 
         {:page, params} ->
           case list(client, path, params) do
-            {:ok, %Page{data: data, after_cursor: nil}} ->
-              {data, :done}
-
-            {:ok, %Page{data: data, after_cursor: cursor}} ->
-              {data, {:page, advance(params, cursor)}}
-
-            {:error, %Error{} = error} ->
-              raise error
+            {:ok, %Page{data: data} = page} -> {data, next_state(page, params)}
+            {:error, %Error{} = error} -> raise error
           end
       end,
       fn _ -> :ok end
@@ -346,7 +335,9 @@ defmodule Duffel.Client do
   def request(%__MODULE__{} = client, method, path, opts \\ []) do
     {idempotency_key, opts} = Keyword.pop(opts, :idempotency_key)
     {params, opts} = Keyword.pop(opts, :params)
-    url = append_query(path, params)
+    # Params arrive as a keyword list or a map, so they are normalised here
+    # rather than by every resource that takes them.
+    url = append_query(path, params && Map.new(params))
 
     headers =
       [{"duffel-version", client.api_version}, {"accept", "application/json"}] ++
@@ -369,23 +360,35 @@ defmodule Duffel.Client do
     metadata = %{method: method, path: path, base_url: client.base_url}
 
     :telemetry.span([:duffel, :request], metadata, fn ->
-      response = Req.request(req_options)
-      result = handle_response(response)
+      {result, stop_metadata} = handle_response(Req.request(req_options))
 
-      stop_metadata =
-        Map.merge(metadata, %{
-          status: response_status(response),
-          result: result_tag(result),
-          rate_limit: response_rate_limit(response)
-        })
-
-      {result, stop_metadata}
+      {result, Map.merge(metadata, stop_metadata)}
     end)
   end
 
+  # One pass over the response builds both the result and the `:stop`
+  # telemetry metadata, so the rate-limit headers are parsed once and the
+  # error and the telemetry event cannot disagree about them.
+  defp handle_response({:ok, %Req.Response{status: status, body: body} = response})
+       when status in 200..299 do
+    {{:ok, body}, %{status: status, result: :ok, rate_limit: RateLimit.from_response(response)}}
+  end
+
+  defp handle_response({:ok, %Req.Response{status: status} = response}) do
+    error = Error.from_response(response)
+
+    {{:error, error}, %{status: status, result: :error, rate_limit: error.rate_limit}}
+  end
+
+  defp handle_response({:error, exception}) do
+    {{:error, Error.from_exception(exception)}, %{status: nil, result: :error, rate_limit: nil}}
+  end
+
+  defp next_state(%Page{after_cursor: nil}, _params), do: :done
+
   # Handing back the cursor we just sent would fetch the same page again, and
   # again. Stop loudly rather than spin.
-  defp advance(%{"after" => cursor} = _params, cursor) do
+  defp next_state(%Page{after_cursor: cursor}, %{"after" => cursor}) do
     raise %Error{
       type: :unexpected_response,
       title: "Pagination stalled",
@@ -395,7 +398,7 @@ defmodule Duffel.Client do
     }
   end
 
-  defp advance(params, cursor), do: Map.put(params, "after", cursor)
+  defp next_state(%Page{} = page, params), do: {:page, Page.next_params(page, params)}
 
   # Duffel documents 500 and 502 as not retryable, so a failing order create
   # is handed back rather than sent again. 504 may mean the supplier processed
@@ -449,7 +452,9 @@ defmodule Duffel.Client do
   # several names. A map nests, so `departing_at: %{after: ...}` becomes
   # `departing_at[after]=...`.
   defp encode_param({key, values}) when is_list(values) do
-    Enum.map(values, &{to_string(key), &1})
+    key = to_string(key)
+
+    Enum.map(values, &{key, &1})
   end
 
   defp encode_param({key, nested}) when is_map(nested) and not is_struct(nested) do
@@ -465,29 +470,5 @@ defmodule Duffel.Client do
   # precaution: it may not stop a retry booking twice.
   defp generate_idempotency_key do
     24 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false)
-  end
-
-  defp response_status({:ok, %Req.Response{status: status}}), do: status
-  defp response_status(_other), do: nil
-
-  defp response_rate_limit({:ok, %Req.Response{} = response}),
-    do: RateLimit.from_response(response)
-
-  defp response_rate_limit(_other), do: nil
-
-  defp result_tag({:ok, _body}), do: :ok
-  defp result_tag({:error, _reason}), do: :error
-
-  defp handle_response({:ok, %Req.Response{status: status, body: body}})
-       when status in 200..299 do
-    {:ok, body}
-  end
-
-  defp handle_response({:ok, %Req.Response{} = response}) do
-    {:error, Error.from_response(response)}
-  end
-
-  defp handle_response({:error, exception}) do
-    {:error, Error.from_exception(exception)}
   end
 end

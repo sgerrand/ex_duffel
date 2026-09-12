@@ -78,6 +78,6 @@ defmodule Duffel.Stays.Accommodation do
   @spec reviews(Client.t(), String.t(), keyword() | map()) ::
           {:ok, map()} | {:error, Error.t()}
   def reviews(client, id, params \\ []) when is_binary(id) do
-    Client.get_data(client, "#{@path}/#{id}/reviews", params: Map.new(params))
+    Client.get_data(client, "#{@path}/#{id}/reviews", params: params)
   end
 end
