@@ -611,6 +611,15 @@ paths:
           style: form
           explode: true
           description: Filter by passenger name
+        - name: owner_id[]
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          description: Filter by owner.id, which must be an airline.id
         - name: requires_action
           in: query
           schema:
