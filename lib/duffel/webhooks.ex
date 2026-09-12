@@ -134,9 +134,10 @@ defmodule Duffel.Webhooks do
 
     with {:ok, timestamp, signatures} <- parse_header(signature_header),
          :ok <- check_tolerance(timestamp, now, tolerance) do
+      # Hashed as iodata, so a large body is not copied to build the input.
       expected =
         :hmac
-        |> :crypto.mac(:sha256, secret, "#{timestamp}.#{raw_body}")
+        |> :crypto.mac(:sha256, secret, [Integer.to_string(timestamp), ".", raw_body])
         |> Base.encode16(case: :lower)
 
       if Enum.any?(signatures, &secure_compare(&1, expected)) do
