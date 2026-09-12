@@ -51,10 +51,7 @@ defmodule Duffel.RateLimit do
   end
 
   defp header(response, name) do
-    case Req.Response.get_header(response, name) do
-      [value | _rest] -> value
-      [] -> nil
-    end
+    response |> Req.Response.get_header(name) |> List.first()
   end
 
   defp integer_header(response, name) do
