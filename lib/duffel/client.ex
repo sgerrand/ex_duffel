@@ -461,8 +461,9 @@ defmodule Duffel.Client do
 
   defp encode_param({key, value}), do: [{to_string(key), value}]
 
-  # Failed requests are retried automatically, including POSTs, so every POST
-  # gets a key to stop a retry booking twice.
+  # Failed requests are retried automatically, including POSTs, and a retry
+  # reuses this key. Duffel does not document the header, so it is a
+  # precaution: it may not stop a retry booking twice.
   defp generate_idempotency_key do
     24 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false)
   end
