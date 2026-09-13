@@ -64,3 +64,7 @@ No network. Every test that makes a request starts with `use Duffel.Case, async:
 ## Commits
 
 Conventional Commits (`type(scope): subject`). Never add `Co-Authored-By` or any AI attribution. Commit lib + test file pairs together, one logical group per commit.
+
+## Releases
+
+release-please handles releases. Never bump `@version` in `mix.exs`, add a `CHANGELOG.md` entry, or change the version in `README.md` by hand: a `chore(main): release ...` PR does all three, and the README version sits between the `x-release-please` markers. The commit type sets the bump — `feat:` a minor one, `fix:` and `perf:` a patch — and types like `docs:`, `refactor:`, `test:`, `ci:` and `chore:` release nothing.
