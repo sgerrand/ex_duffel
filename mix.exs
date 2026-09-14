@@ -56,7 +56,17 @@ defmodule Duffel.MixProject do
     [
       main: "readme",
       source_ref: "v#{@version}",
-      extras: ["README.md", "CHANGELOG.md", "LICENSE"],
+      extras: [
+        "README.md",
+        "guides/stays.md",
+        "guides/cars.md",
+        "guides/errors_and_retries.md",
+        "guides/webhooks.md",
+        "guides/testing.md",
+        "CHANGELOG.md",
+        "LICENSE"
+      ],
+      groups_for_extras: [Guides: ~r"^guides/"],
       groups_for_modules: [
         Core: [
           Duffel,
@@ -155,7 +165,7 @@ defmodule Duffel.MixProject do
 
   def package do
     [
-      files: ~w(.formatter.exs lib mix.exs README.md CHANGELOG.md LICENSE),
+      files: ~w(.formatter.exs lib guides mix.exs README.md CHANGELOG.md LICENSE),
       licenses: ["BSD-2-Clause"],
       links: %{
         "GitHub" => @source_url,
