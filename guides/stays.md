@@ -42,11 +42,14 @@ result = hd(search["results"])
 {:ok, result} = Duffel.Stays.Search.fetch_all_rates(client, result["id"])
 
 rate =
-  result["rooms"]
+  result["accommodation"]["rooms"]
   |> hd()
   |> Map.fetch!("rates")
   |> hd()
 ```
+
+The rooms and their rates hang off the accommodation. `result["rooms"]`
+is a number — how many rooms the search asked for.
 
 ## 3. Quote
 
