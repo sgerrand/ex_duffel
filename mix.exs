@@ -66,7 +66,7 @@ defmodule Duffel.MixProject do
         "CHANGELOG.md",
         "LICENSE"
       ],
-      groups_for_extras: [Guides: Path.wildcard("guides/*.md")],
+      groups_for_extras: [Guides: ~r"^guides/"],
       groups_for_modules: [
         Core: [
           Duffel,
