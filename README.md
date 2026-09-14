@@ -53,7 +53,9 @@ client used only for searching:
 client = Duffel.new(access_token: token, receive_timeout: 30_000)
 ```
 
-Every call returns `{:ok, result}` or `{:error, %Duffel.Error{}}`.
+Every call returns `{:ok, result}` or `{:error, %Duffel.Error{}}`. See
+[Errors and retries](guides/errors_and_retries.md) for the error types,
+what gets retried, and rate limits.
 
 ## Searching and booking flights
 
@@ -114,7 +116,8 @@ order["booking_reference"]
 #=> "RZPNX8"
 ```
 
-`:idempotency_key` is optional — see [Error handling](#error-handling).
+`:idempotency_key` is optional — see
+[Errors and retries](guides/errors_and_retries.md).
 
 ## Pagination
 
@@ -185,69 +188,6 @@ page's data to decode a list:
 orders = Enum.map(page.data, &Duffel.Schema.Order.from_map/1)
 ```
 
-## Error handling
-
-Every failure comes back as a `Duffel.Error`, so one clause covers both a
-rejected request and a request that never reached Duffel. Errors from the
-API mirror the [Duffel error schema](https://duffel.com/docs/api/overview/errors),
-with `type` as an atom for pattern matching:
-
-```elixir
-case Duffel.Orders.create(client, params) do
-  {:ok, order} ->
-    order
-
-  {:error, %Duffel.Error{type: :rate_limit_error}} ->
-    retry_later()
-
-  {:error, %Duffel.Error{type: :validation_error, source: source, message: message}} ->
-    show_field_error(source, message)
-
-  {:error, %Duffel.Error{type: :transport_error}} ->
-    # the request failed to complete: connection refused, DNS, timeout.
-    # Duffel may still have made the order, so look before retrying
-    check_order_then_retry()
-
-  {:error, %Duffel.Error{request_id: request_id}} ->
-    # quote request_id when contacting Duffel support. It comes from the
-    # response body, or the x-request-id header when the body has none
-    log_and_fail(request_id)
-end
-```
-
-A transport error has `status: nil` and keeps the underlying exception,
-usually a `Req.TransportError`, under `reason`.
-
-A 408, 429 or 503 is retried automatically, with a growing delay between
-attempts. On a 429 or 503 the delay comes from `retry-after` when Duffel
-sends it. A few network errors are retried too: a timeout, a refused or
-closed connection, and an HTTP/2 request that was never sent. Other network
-errors, such as an unreachable host, are not retried and come back
-straight away as a `:transport_error`. Retries apply to every method,
-`POST` included. 500 and 502 are never retried, because
-Duffel documents them as "you should not retry this request", and a 504 is
-retried only on a `GET` or `HEAD`. When a response reports your
-remaining allowance, `Duffel.RateLimit` carries it — on the error, and on
-every `[:duffel, :request, :stop]` telemetry event, so you can slow down
-before Duffel starts refusing requests:
-
-```elixir
-{:error, %Duffel.Error{type: :rate_limit_error, rate_limit: rate_limit}} ->
-  retry_in(rate_limit.retry_after_ms)
-```
-
-By default a `POST` carries an `Idempotency-Key` header. The client makes
-one per call, and retries of that call reuse it. Pass your own with
-`:idempotency_key`, or `idempotency_key: nil` to send none. Duffel does not
-document how it treats the header, so it is best-effort: it may not stop a
-duplicate.
-
-This means a retried `POST` can still book twice. A timeout or dropped
-connection can happen after Duffel has accepted the booking, and the
-client has no way to tell. So if a create ends in a transport error or a
-5xx, the result is unknown — the order may or may not exist. Check before
-you try again.
-
 ## Telemetry
 
 Every request emits a [`telemetry`](https://hexdocs.pm/telemetry) span
@@ -268,75 +208,16 @@ and `:rate_limit`. Attach a handler to measure latency or log requests:
 )
 ```
 
-## Webhooks
+## Guides
 
-Manage subscriptions and verify incoming deliveries:
-
-```elixir
-{:ok, webhook} =
-  Duffel.Webhooks.create(client, %{
-    url: "https://example.com/webhooks/duffel",
-    events: ["order.created", "order.airline_initiated_change_detected"]
-  })
-
-# The signing secret is only returned on creation — store it.
-webhook["secret"]
-```
-
-In your endpoint, verify the `X-Duffel-Signature` header against the **raw
-request body** before parsing:
-
-```elixir
-case Duffel.Webhooks.verify_signature(signature_header, raw_body, secret) do
-  :ok -> handle_event(Jason.decode!(raw_body))
-  {:error, _reason} -> send_resp(conn, 401, "")
-end
-```
-
-Verification uses a constant-time comparison and rejects deliveries older
-than 5 minutes (configurable via `:tolerance`).
-
-### Keeping the raw body in Phoenix
-
-`Plug.Parsers` reads and decodes the body before your controller runs, so
-the raw bytes are gone by the time you need them. Give it a body reader
-that keeps a copy:
-
-```elixir
-defmodule MyAppWeb.CacheBodyReader do
-  # `:more` means the body is bigger than one read, so keep each chunk
-  def read_body(conn, opts) do
-    case Plug.Conn.read_body(conn, opts) do
-      {status, body, conn} when status in [:ok, :more] ->
-        conn = update_in(conn.assigns[:raw_body], &[body | &1 || []])
-        {status, body, conn}
-
-      error ->
-        error
-    end
-  end
-end
-```
-
-Add it to the `Plug.Parsers` call in your endpoint:
-
-```elixir
-plug Plug.Parsers,
-  parsers: [:urlencoded, :multipart, :json],
-  pass: ["*/*"],
-  json_decoder: Phoenix.json_library(),
-  body_reader: {MyAppWeb.CacheBodyReader, :read_body, []}
-```
-
-Then, in the controller:
-
-```elixir
-raw_body = conn.assigns.raw_body |> Enum.reverse() |> IO.iodata_to_binary()
-signature_header = conn |> get_req_header("x-duffel-signature") |> List.first()
-```
-
-This keeps a copy of every request body. To keep it only for webhooks,
-check `conn.request_path` in `read_body/2`.
+- [Errors and retries](guides/errors_and_retries.md) — error types, the
+  retry policy, rate limits and idempotency keys.
+- [Webhooks](guides/webhooks.md) — subscriptions, signature checks and
+  keeping the raw body in Phoenix.
+- [Stays](guides/stays.md) — search, quote and book accommodation.
+- [Cars](guides/cars.md) — search, quote and book rental cars.
+- [Testing your app](guides/testing.md) — stub Duffel with `Req.Test`,
+  including error and transport failures.
 
 ## Resources
 
@@ -379,7 +260,7 @@ check `conn.request_path` in `read_body/2`.
 | `Duffel.Stays.LoyaltyProgrammes` | Loyalty programme reference data |
 
 The Stays booking flow: search → `fetch_all_rates` → create a quote →
-create a booking from the quote.
+create a booking from the quote. See the [Stays guide](guides/stays.md).
 
 ### Cars
 
@@ -391,7 +272,7 @@ create a booking from the quote.
 | `Duffel.Cars.Bookings` | Book, retrieve, cancel |
 
 The Cars booking flow: search → create a quote → create a booking from
-the quote.
+the quote. See the [Cars guide](guides/cars.md).
 
 ### Payments
 
@@ -410,53 +291,6 @@ the client. Card tokens are single-use and short-lived.
 | `Duffel.Identity.CustomerUsers` | Travellers and bookers |
 | `Duffel.Identity.CustomerUserGroups` | Group users for access scoping |
 | `Duffel.Identity.ComponentClientKeys` | Browser keys for Duffel UI components |
-
-## Testing your app
-
-The client accepts `req_options`, so you can stub HTTP with
-[`Req.Test`](https://hexdocs.pm/req/Req.Test.html) — no network needed.
-`Req.Test` needs Plug. Phoenix apps already have it; otherwise add
-`{:plug, "~> 1.0", only: :test}` to your dependencies.
-
-```elixir
-client =
-  Duffel.new(
-    access_token: "duffel_test_fake",
-    req_options: [plug: {Req.Test, MyApp.DuffelStub}, retry: false]
-  )
-
-Req.Test.stub(MyApp.DuffelStub, fn conn ->
-  Req.Test.json(conn, %{"data" => %{"id" => "ord_1"}})
-end)
-```
-
-`retry: false` stops the client retrying a stubbed 429 or 503, which
-would slow your tests down.
-
-To test your error handling, stub an error response in Duffel's shape:
-
-```elixir
-Req.Test.stub(MyApp.DuffelStub, fn conn ->
-  conn
-  |> Plug.Conn.put_status(422)
-  |> Req.Test.json(%{
-    "errors" => [
-      %{
-        "type" => "validation_error",
-        "code" => "missing_field",
-        "title" => "Missing field",
-        "message" => "slices is required"
-      }
-    ]
-  })
-end)
-
-{:error, %Duffel.Error{type: :validation_error, status: 422}} =
-  Duffel.OfferRequests.create(client, %{})
-```
-
-`Req.Test.transport_error(conn, :timeout)` stands in for a request that
-never reached Duffel, and comes back as a `:transport_error`.
 
 ## Documentation
 
